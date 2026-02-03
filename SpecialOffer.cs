@@ -1,26 +1,30 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace Gruberoo
+namespace PRG_Final_ASG
 {
     internal class SpecialOffer
     {
-        public string OfferCode { get; set; }
-        public string OfferDesc { get; set; }
-        public double Discount { get; set; }
+        private string offerCode;
+        private string offerDesc;
+        private double discount;
 
-        public SpecialOffer(string offerCode, string offerDesc, double discount)
+        public SpecialOffer(string code, string description, double discount)
         {
-            OfferCode=offerCode;
-            OfferDesc=offerDesc;
-            Discount=discount;
+            offerCode = code;
+            offerDesc = description;
+            this.discount = discount;
         }
+
         public override string ToString()
         {
-            return $"{OfferCode}: {OfferDesc} (-${Discount})";
+            if (discount > 0)
+                return $"{offerCode}: {offerDesc} ({discount}% off)";
+            else
+                return $"{offerCode}: {offerDesc}";
         }
+
+        public double Discount => discount;
     }
 }

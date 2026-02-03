@@ -1,26 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace Gruberoo
+namespace PRG_Final_ASG
 {
     internal class Restaurant
     {
-        public string RestaurantId { get; set; }
-        public string RestaurantName { get; set; }
-        public string RestaurantStatus { get; set; }
+        private string restaurantId;
+        private string restaurantName;
+        private string restaurantEmail;
 
-        public Restaurant(string restaurantId, string restaurantName, string restaurantStatus)
+        private List<Menu> menus;
+        private List<SpecialOffer> specialOffers;
+
+        public Restaurant(string id, string name, string email)
         {
-            RestaurantId=restaurantId;
-            RestaurantName=restaurantName;
-            RestaurantStatus=restaurantStatus;
+            restaurantId = id;
+            restaurantName = name;
+            restaurantEmail = email;
+            menus = new List<Menu>();
+            specialOffers = new List<SpecialOffer>();
         }
-        private List<Menu> menus = new List<Menu>();
-        private List<Order> orders = new List<Order>();
-        private List<SpecialOffer> specialOffers = new List<SpecialOffer>();
 
         public void AddMenu(Menu menu)
         {
@@ -34,32 +34,32 @@ namespace Gruberoo
 
         public void DisplayMenu()
         {
-            foreach (var menu in menus)
+            foreach (Menu menu in menus)
             {
-                System.Console.WriteLine(menu);
+                Console.WriteLine(menu);
+                menu.DisplayFoodItems();
             }
         }
 
-        public void DisplayOrders()
+        public void AddSpecialOffer(SpecialOffer offer)
         {
-            foreach (var order in orders)
-            {
-                System.Console.WriteLine(order);
-            }
+            specialOffers.Add(offer);
         }
 
         public void DisplaySpecialOffers()
         {
-            foreach (var offer in specialOffers)
+            foreach (SpecialOffer offer in specialOffers)
             {
-                System.Console.WriteLine(offer);
+                Console.WriteLine(offer);
             }
         }
 
         public override string ToString()
         {
-            return RestaurantName;
+            return $"{restaurantName} ({restaurantId}) - {restaurantEmail}";
         }
 
+        public string RestaurantId => restaurantId;
+        public string RestaurantName => restaurantName;
     }
 }

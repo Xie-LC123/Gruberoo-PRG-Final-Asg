@@ -1,28 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace Gruberoo
+namespace PRG_Final_ASG
 {
     internal class FoodItem
     {
-        public string ItemName { get; set; }
-        public string ItemDesc { get; set; }
-        public double ItemPrice { get; set; }
-        public string Customise { get; set; }
+        private string itemName;
+        private string description;
+        private double price;
 
-        public FoodItem(string itemName, string itemDesc, double itemPrice, string customise)
+        public FoodItem(string itemName, string description, double price)
         {
-            ItemName = itemName;
-            ItemDesc = itemDesc;
-            ItemPrice = itemPrice;
-            Customise = customise;
+            this.itemName = itemName;
+            this.description = description;
+            this.price = price;
         }
+
+        public string ItemName => itemName;
+        public double Price => price;
+
         public override string ToString()
         {
-            return $"{ItemName} - {ItemDesc} (${ItemPrice})";
+            return $"{itemName}: {description} - ${price:F2}";
         }
     }
 }

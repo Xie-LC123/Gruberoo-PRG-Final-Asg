@@ -1,22 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace Gruberoo
+namespace PRG_Final_ASG
 {
     internal class Menu
     {
-        public string MenuId { get; set; }
-        public string MenuName { get; set; }
+        private string menuId;
+        private string menuName;
+        private List<FoodItem> foodItems;
 
         public Menu(string menuId, string menuName)
         {
-            MenuId = menuId;
-            MenuName = menuName;
+            this.menuId = menuId;
+            this.menuName = menuName;
+            foodItems = new List<FoodItem>();
         }
-        private List<FoodItem> foodItems = new List<FoodItem>();
 
         public void AddFoodItem(FoodItem foodItem)
         {
@@ -30,15 +29,20 @@ namespace Gruberoo
 
         public void DisplayFoodItems()
         {
-            foreach (var item in foodItems)
+            foreach (FoodItem item in foodItems)
             {
-                System.Console.WriteLine(item);
+                Console.WriteLine(item);
             }
         }
 
         public override string ToString()
         {
-            return $"Menu: {MenuName}";
+            return $"{menuName} ({menuId})";
+        }
+
+        public List<FoodItem> GetFoodItems()
+        {
+            return foodItems;
         }
     }
 }
