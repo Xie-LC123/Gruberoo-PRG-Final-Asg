@@ -1,29 +1,57 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace Gruberoo
+namespace PRG_Final_ASG
 {
     internal class Customer
     {
+        // canonical fields / properties (existing signature)
         public string EmailAddress { get; set; }
         public string CustomerName { get; set; }
-        public IEnumerable<object> OrderList { get; internal set; }
-        public string Email { get; internal set; }
 
+        private List<Order> orders = new List<Order>();
+
+        // constructors
         public Customer(string emailAddress, string customerName)
         {
             EmailAddress = emailAddress;
             CustomerName = customerName;
         }
 
-        private List<Order> orders = new List<Order>();
+            // Compatibility aliases used by Program.cs
+        public string Email
+        {
+            get => EmailAddress;
+            set => EmailAddress = value;
+        }
 
+        public string Name
+        {
+            get => CustomerName;
+            set => CustomerName = value;
+        }
+
+        // Expose orders list (read-only reference)
+        public List<Order> OrderList => orders;
+
+        // existing API
         public void AddOrder(Order order)
         {
+            if (order == null) return;
             orders.Add(order);
+
+            // keep a back-reference if needed by Program (some code expects Order.Customer)
+            try
+            {
+                // set Order's customer if property exists (optional)
+                var prop = order.GetType().GetProperty("Customer");
+                if (prop != null && prop.PropertyType == typeof(Customer))
+                {
+                    prop.SetValue(order, this);
+                }
+            }
+            catch { /* ignore reflection failures */ }
         }
 
         public bool RemoveOrder(Order order)
@@ -33,9 +61,9 @@ namespace Gruberoo
 
         public void DisplayAllOrders()
         {
-            foreach (var order in orders)
+            foreach (var o in orders)
             {
-                System.Console.WriteLine(order);
+                Console.WriteLine(o.ToString());
             }
         }
 

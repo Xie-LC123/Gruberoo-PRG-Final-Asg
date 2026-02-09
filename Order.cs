@@ -2,13 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using PRG_Final_ASG;
 
-namespace Gruberoo
+namespace PRG_Final_ASG
 {
     internal class Order
     {
+        // canonical properties (from signature)
         public int OrderId { get; set; }
         public DateTime OrderDateTime { get; set; }
         public double OrderTotal { get; set; }
@@ -17,9 +16,11 @@ namespace Gruberoo
         public string DeliveryAddress { get; set; }
         public string OrderPaymentMethod { get; set; }
         public bool OrderPaid { get; set; }
-        public DateTime DeliveryDateTime { get; internal set; }
-        public double TotalAmount { get; internal set; }
 
+        private List<OrderedFoodItem> orderedFoodItems = new List<OrderedFoodItem>();
+        private List<SpecialOffer> specialOffers = new List<SpecialOffer>();
+
+        // Full signature ctor (already in your signatures)
         public Order(int orderId, DateTime orderDateTime, double orderTotal, string orderStatus, DateTime deliverDateTime, string deliveryAddress, string orderPaymentMethod, bool orderPaid)
         {
             OrderId = orderId;
@@ -31,29 +32,70 @@ namespace Gruberoo
             OrderPaymentMethod = orderPaymentMethod;
             OrderPaid = orderPaid;
         }
-        private List<OrderedFoodItem> orderedFoodItems = new List<OrderedFoodItem>();
-        private List<SpecialOffer> specialOffers = new List<SpecialOffer>();
 
+        // Parameterless ctor (Program uses this)
+        public Order()
+        {
+            OrderDateTime = DateTime.MinValue;
+            DeliverDateTime = DateTime.MinValue;
+            OrderStatus = "Pending";
+        }
+
+        // Convenience ctor used in Program.LoadOrders (int, double, string)
+                public Order(int orderId, double orderTotal, string orderStatus)
+        {
+            OrderId = orderId;
+            OrderTotal = orderTotal;
+            OrderStatus = orderStatus;
+            OrderDateTime = DateTime.Now;
+            DeliverDateTime = DateTime.Now;
+        }
+
+        // Compatibility aliases expected by Program.cs
+        public double TotalAmount
+        {
+            get => OrderTotal;
+            set => OrderTotal = value;
+        }
+
+        public DateTime DeliveryDateTime
+        {
+            get => DeliverDateTime;
+            set => DeliverDateTime = value;
+        }
+
+        public string PaymentMethod
+        {
+            get => OrderPaymentMethod;
+            set => OrderPaymentMethod = value;
+        }
+
+        // expose ordered items
+        public List<OrderedFoodItem> OrderedItems => orderedFoodItems;
+
+        // existing API
         public double CalculateOrderTotal()
         {
-            double total = 0;
-            foreach (var item in orderedFoodItems)
+            double sum = 0;
+            foreach (var it in orderedFoodItems)
             {
-                total += item.CalculateSubtotal();
+                sum += it.SubTotal;
             }
-
-            foreach (var offer in specialOffers)
-            {
-                total -= offer.Discount;
-            }
-
-            OrderTotal = total;
+            OrderTotal = sum;
             return OrderTotal;
         }
+
         public void AddOrderedFoodItem(OrderedFoodItem item)
         {
+            if (item == null) return;
             orderedFoodItems.Add(item);
-        }   
+            // update subtotal
+            CalculateOrderTotal();
+        }
 
+        public override string ToString()
+        {
+            return $"Order {OrderId} - {OrderStatus} - ${OrderTotal:F2}";
+        }
     }
 }
