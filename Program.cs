@@ -1,11 +1,12 @@
 ﻿//==========================================================
 // Student Number : S10271327
 // Student Name : Xie Liangchen
-// Partner Name : Sheng Le
+// Student Number : S10273654
+// Student Name : Chiam Sheng Le
 //==========================================================
 
 
-// Feature 2
+// Feature 1,2
 using PRG_Final_ASG;
 
 namespace Gruberoo
@@ -18,11 +19,12 @@ namespace Gruberoo
         static void Main(string[] args)
         {
             LoadCustomers();
+            LoadRestaurants();
+            LoadFoodItems();
             LoadOrders();
 
             Console.WriteLine($"{customers.Count} customers loaded!");
             Console.WriteLine("Orders loaded successfully!");
-
             Console.ReadKey();
         }
 
@@ -42,7 +44,7 @@ namespace Gruberoo
             }
         }
 
-        static void LoadOrders()
+        static void tLoadOrders()
         {
             string[] lines = File.ReadAllLines("orders - Copy.csv");
 
@@ -73,6 +75,44 @@ namespace Gruberoo
                 }
             }
         }
+        static void LoadFoodItems()
+        {
+            string[] lines = File.ReadAllLines("fooditems.csv");
+
+            for (int i = 1; i < lines.Length; i++)
+            {
+                string[] data = lines[i].Split(',');
+
+                string itemId = data[0].Trim();
+                string itemName = data[1].Trim();
+                double price = double.Parse(data[2].Trim());
+                string restaurantId = data[3].Trim();
+
+                FoodItem foodItem = new FoodItem(itemId, itemName, price);
+
+                Restaurant restaurant = restaurants.Find(r => r.RestaurantId == restaurantId);
+
+                if (restaurant != null)
+                {
+                    restaurant.AddFoodItem(foodItem);
+                }
+            }
+        }
+        static void LoadRestaurants()
+        {
+            string[] lines = File.ReadAllLines("restaurants.csv");
+
+            for (int i = 1; i < lines.Length; i++)
+            {
+                string[] data = lines[i].Split(',');
+
+                string restaurantId = data[0].Trim();
+                string restaurantName = data[1].Trim();
+
+                Restaurant restaurant = new Restaurant(restaurantId, restaurantName);
+                restaurants.Add(restaurant);
+            }
+        }
     }
 
 }
@@ -96,6 +136,25 @@ static void ListAllRestaurants(List<Restaurant> restaurants)
         }
 
         Console.WriteLine();
+    }
+}
+// Feature 4
+
+static void ListAllOrders(List<Order> orders)
+{
+    Console.WriteLine("\nAll Orders");
+    Console.WriteLine("==========");
+
+    Console.WriteLine(
+        "Order ID   Customer        Restaurant        Delivery Date/Time     Amount     Status"
+    );
+
+    foreach (Order o in orders)
+    {
+        Console.WriteLine(
+            $"{o.OrderID,-10} {o.Customer.Name,-15} {o.Restaurant.Name,-17} " +
+            $"{o.DeliveryDateTime:dd/MM/yyyy HH:mm}   ${o.TotalAmount,-8:F2} {o.Status}"
+        );
     }
 }
 
@@ -184,6 +243,81 @@ static void CreateOrder(List<Customer> customers, List<Restaurant> restaurants)
     }
 }
 
+// Feature 6
+static void ProcessOrder(
+    List<Restaurant> restaurants,
+    Stack<Order> refundStack)
+{
+    Console.Write("\nEnter Restaurant ID: ");
+    string restID = Console.ReadLine();
+
+    Restaurant r = restaurants.Find(x => x.RestaurantID == restID);
+
+    if (r == null)
+    {
+        Console.WriteLine("Invalid Restaurant ID.");
+        return;
+    }
+
+    foreach (Order o in r.OrderQueue)
+    {
+        Console.WriteLine($"\nOrder {o.OrderID}:");
+        Console.WriteLine($"Customer: {o.Customer.Name}");
+        Console.WriteLine("Ordered Items:");
+
+        foreach (OrderedFoodItem item in o.OrderedItems)
+        {
+            Console.WriteLine($"- {item.ItemName} x {item.QtyOrdered}");
+        }
+
+        Console.WriteLine($"Delivery: {o.DeliveryDateTime}");
+        Console.WriteLine($"Total Amount: ${o.TotalAmount:F2}");
+        Console.WriteLine($"Status: {o.Status}");
+
+        Console.Write("[C]onfirm / [R]eject / [S]kip / [D]eliver: ");
+        string choice = Console.ReadLine().ToUpper();
+
+        switch (choice)
+        {
+            case "C":
+                if (o.Status == "Pending")
+                {
+                    o.Status = "Preparing";
+                    Console.WriteLine("Order confirmed. Status: Preparing");
+                }
+                break;
+
+            case "R":
+                if (o.Status == "Pending")
+                {
+                    o.Status = "Rejected";
+                    refundStack.Push(o);
+                    Console.WriteLine("Order rejected. Refund processed.");
+                }
+                break;
+
+            case "S":
+                if (o.Status == "Cancelled")
+                {
+                    Console.WriteLine("Order skipped.");
+                }
+                break;
+
+            case "D":
+                if (o.Status == "Preparing")
+                {
+                    o.Status = "Delivered";
+                    Console.WriteLine("Order delivered successfully.");
+                }
+                break;
+
+            default:
+                Console.WriteLine("Invalid option.");
+                break;
+        }
+    }
+}
+
 // Feature 7
 static void ModifyOrder(List<Customer> customers)
 {
@@ -258,4 +392,59 @@ static void ModifyOrder(List<Customer> customers)
     }
 
     Console.WriteLine($"Order {order.OrderId} updated successfully.");
+}
+
+// Feature 8
+static void DeleteOrder(Stack<Order> refundStack, List<Customer> customers)
+{
+    Console.Write("\nEnter Customer Email: ");
+    string email = Console.ReadLine();
+
+    Customer c = customers.Find(x => x.Email == email);
+
+    if (c == null)
+    {
+        Console.WriteLine("Invalid customer.");
+        return;
+    }
+
+    var pendingOrders = c.OrderList.FindAll(o => o.Status == "Pending");
+
+    if (pendingOrders.Count == 0)
+    {
+        Console.WriteLine("No pending orders.");
+        return;
+    }
+
+    Console.WriteLine("Pending Orders:");
+    foreach (Order o in pendingOrders)
+    {
+        Console.WriteLine(o.OrderID);
+    }
+
+    Console.Write("Enter Order ID: ");
+    int orderID = int.Parse(Console.ReadLine());
+
+    Order order = pendingOrders.Find(o => o.OrderID == orderID);
+
+    if (order == null)
+    {
+        Console.WriteLine("Invalid Order ID.");
+        return;
+    }
+
+    Console.WriteLine($"\nCustomer: {order.Customer.Name}");
+    Console.WriteLine($"Total Amount: ${order.TotalAmount:F2}");
+    Console.WriteLine($"Status: {order.Status}");
+
+    Console.Write("Confirm deletion? [Y/N]: ");
+    if (Console.ReadLine().ToUpper() == "Y")
+    {
+        order.Status = "Cancelled";
+        refundStack.Push(order);
+
+        Console.WriteLine(
+            $"Order {order.OrderID} cancelled. Refund of ${order.TotalAmount:F2} processed."
+        );
+    }
 }
