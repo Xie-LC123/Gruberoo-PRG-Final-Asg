@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Gruberoo;
 
 namespace PRG_Final_ASG
 {
@@ -61,5 +62,7 @@ namespace PRG_Final_ASG
 
         public string RestaurantId => restaurantId;
         public string RestaurantName => restaurantName;
+
+        public IEnumerable<Order> OrderQueue { get; internal set; }
     }
 }

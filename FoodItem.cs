@@ -10,7 +10,7 @@ namespace PRG_Final_ASG
         private string description;
         private double price;
 
-        public FoodItem(string itemName, string description, double price)
+        public FoodItem(string itemName, string description, double price, string customise)
         {
             this.itemName = itemName;
             this.description = description;

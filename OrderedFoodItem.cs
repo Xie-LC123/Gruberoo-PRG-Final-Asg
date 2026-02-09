@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using PRG_Final_ASG;
 
 namespace Gruberoo
 {
@@ -14,6 +15,7 @@ namespace Gruberoo
 
         public int QtyOrdered { get; set; }
         public double SubTotal { get; private set; }
+        public int ItemPrice { get; private set; }
 
         public double CalculateSubtotal()
         {

@@ -10,6 +10,8 @@ namespace Gruberoo
     {
         public string EmailAddress { get; set; }
         public string CustomerName { get; set; }
+        public IEnumerable<object> OrderList { get; internal set; }
+        public string Email { get; internal set; }
 
         public Customer(string emailAddress, string customerName)
         {

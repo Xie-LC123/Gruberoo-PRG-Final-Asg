@@ -1,0 +1,20 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs/ConsoleApp1
+/.vs/Github-repo/CopilotIndices/17.14.1347.20289
+/.vs/Github-repo/FileContentIndex
+/.vs/Gruberoo/v17
+/.vs/ConsoleApp1.csproj.dtbcache.json
+/.vs/Github-repo/v17/.wsuo
+/.vs/Github-repo/v17/DocumentLayout.backup.json
+/.vs/Github-repo/v17/DocumentLayout.json
+/.vs/slnx.sqlite
+/.vs/VSWorkspaceState.json
+/obj/Debug/.NETFramework,Version=v4.7.2.AssemblyAttributes.cs
+/obj/Debug/ConsoleApp1.csproj.AssemblyReference.cache
+/obj/Debug/ConsoleApp1.csproj.CoreCompileInputs.cache
+/obj/Debug/ConsoleApp1.csproj.FileListAbsolute.txt
+/Properties
+*.config

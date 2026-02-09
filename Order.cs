@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using PRG_Final_ASG;
 
 namespace Gruberoo
 {
@@ -16,6 +17,8 @@ namespace Gruberoo
         public string DeliveryAddress { get; set; }
         public string OrderPaymentMethod { get; set; }
         public bool OrderPaid { get; set; }
+        public DateTime DeliveryDateTime { get; internal set; }
+        public double TotalAmount { get; internal set; }
 
         public Order(int orderId, DateTime orderDateTime, double orderTotal, string orderStatus, DateTime deliverDateTime, string deliveryAddress, string orderPaymentMethod, bool orderPaid)
         {
