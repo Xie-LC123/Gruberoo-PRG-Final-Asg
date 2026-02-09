@@ -259,3 +259,70 @@ static void ModifyOrder(List<Customer> customers)
 
     Console.WriteLine($"Order {order.OrderId} updated successfully.");
 }
+
+// Advanced Feature A
+static void BulkProcessOrders(List<Restaurant> restaurants)
+{
+    Console.WriteLine("Bulk Processing of Pending Orders (Today)");
+    Console.WriteLine("==========================================");
+
+    DateTime now = DateTime.Now;
+
+    int totalOrders = 0;
+    int pendingCount = 0;
+    int processedCount = 0;
+    int preparingCount = 0;
+    int rejectedCount = 0;
+
+    // First count ALL orders in system
+    foreach (Restaurant r in restaurants)
+    {
+        totalOrders += r.OrderQueue.Count;
+
+        foreach (Order o in r.OrderQueue)
+        {
+            if (o.OrderStatus == "Pending")
+                pendingCount++;
+        }
+    }
+
+    Console.WriteLine($"Total Pending Orders: {pendingCount}");
+    Console.WriteLine();
+
+    // Process pending orders
+    foreach (Restaurant r in restaurants)
+    {
+        foreach (Order o in r.OrderQueue)
+        {
+            if (o.OrderStatus == "Pending")
+            {
+                processedCount++;
+
+                TimeSpan timeDiff = o.DeliveryDateTime - now;
+
+                if (timeDiff.TotalMinutes < 60)
+                {
+                    o.OrderStatus = "Rejected";
+                    rejectedCount++;
+                }
+                else
+                {
+                    o.OrderStatus = "Preparing";
+                    preparingCount++;
+                }
+            }
+        }
+    }
+
+    Console.WriteLine("Processing Summary");
+    Console.WriteLine("==================");
+    Console.WriteLine($"Orders Processed: {processedCount}");
+    Console.WriteLine($"Preparing Orders: {preparingCount}");
+    Console.WriteLine($"Rejected Orders: {rejectedCount}");
+
+    double percentage = 0;
+    if (totalOrders > 0)
+        percentage = (double)processedCount / totalOrders * 100;
+
+    Console.WriteLine($"Auto-processed Percentage: {percentage:F2}%");
+}
