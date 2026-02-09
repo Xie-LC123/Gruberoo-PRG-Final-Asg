@@ -85,7 +85,7 @@ namespace Gruberoo
             for (int i = 1; i < lines.Length; i++)
             {
                 var data = lines[i].Split(',');
-                restaurants.Add(new Restaurant(data[0], data[1]));
+                restaurants.Add(new Restaurant(data[0], data[1], data[2]));
             }
         }
 
