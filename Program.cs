@@ -28,6 +28,22 @@ namespace Gruberoo
             LoadFoodItems();
             LoadOrders();
 
+            Console.WriteLine("Welcome to the Gruberoo Food Delivery System");
+
+            Console.WriteLine($"{restaurants.Count} restaurants loaded!");
+
+            int totalFoodItems = restaurants.Sum(r => r.FoodItems.Count);
+            Console.WriteLine($"{totalFoodItems} food items loaded!");
+
+            Console.WriteLine($"{customers.Count} customers loaded!");
+
+            int totalOrders = customers.Sum(c => c.OrderList.Count);
+            Console.WriteLine($"{totalOrders} orders loaded!");
+
+            Console.WriteLine();
+            Console.ReadKey();
+            Console.Clear();
+
             string choice;
 
             do
