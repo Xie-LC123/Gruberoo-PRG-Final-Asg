@@ -760,8 +760,8 @@ namespace Gruberoo
                 var deliveredOrders = r.OrderQueue.Where(o => o.OrderStatus == "Delivered").ToList();
                 var refundedOrders = r.OrderQueue.Where(o => o.OrderStatus == "Rejected" || o.OrderStatus == "Cancelled").ToList();
 
-                double restaurantTotal = deliveredOrders.Sum(o => o.TotalAmount - deliveryFee);
-                double restaurantRefunds = refundedOrders.Sum(o => o.TotalAmount);
+                double restaurantTotal = deliveredOrders.Sum(o => o.TotalAmount + deliveryFee);
+                double restaurantRefunds = refundedOrders.Sum(o => o.TotalAmount + deliveryFee);
                 double restaurantGruberoo = restaurantTotal * gruberooFeePercent;
 
                 Console.WriteLine($"Restaurant: {r.RestaurantName} ({r.RestaurantId})");
