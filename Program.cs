@@ -43,6 +43,7 @@ namespace Gruberoo
                 Console.WriteLine("5. Modify an existing order");
                 Console.WriteLine("6. Delete an existing order");
                 Console.WriteLine("7. Bulk Process Orders (Advanced A)");
+                Console.WriteLine("8. Display total order amount (Advanced B)");
                 Console.WriteLine("0. Exit");
                 Console.Write("Enter choice: ");
                 choice = Console.ReadLine();
@@ -56,6 +57,8 @@ namespace Gruberoo
                     case "5": ModifyOrder(); break;
                     case "6": DeleteOrder(); break;
                     case "7": BulkProcessOrders(); break;
+                    case "8": DisplayTotalOrderAmount(); break;
+
                 }
 
                 Console.WriteLine("\nPress any key to continue...");
@@ -365,7 +368,7 @@ namespace Gruberoo
                     x.CustomerName,
                     restaurantName,
                     x.Order.DeliveryDateTime.ToString("dd/MM/yyyy HH:mm"),
-                    x.Order.TotalAmount,
+                    x.Order.TotalAmount+5,
                     x.Order.OrderStatus);
             }
 
@@ -390,7 +393,7 @@ namespace Gruberoo
                     x.customerName,
                     restaurantName,
                     x.order.DeliveryDateTime.ToString("dd/MM/yyyy HH:mm"),
-                    x.order.TotalAmount,
+                    x.order.TotalAmount+5,
                     x.order.OrderStatus);
             }
 
@@ -697,28 +700,76 @@ namespace Gruberoo
         // =========================
         static void DeleteOrder()
         {
-            Console.Write("Customer Email: ");
-            string email = Console.ReadLine();
+            Console.Write("Enter Customer Email: ");
+            string email = Console.ReadLine().Trim();
 
-            Customer cust = customers.Find(x => x.Email == email);
-            if (cust == null) return;
+            Customer cust = customers.Find(c => c.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
+            if (cust == null)
+            {
+                Console.WriteLine("Customer not found.");
+                return;
+            }
 
-            var pending = cust.OrderList.Where(o => o.OrderStatus == "Pending").ToList();
+            // Get pending orders
+            var pendingOrders = cust.OrderList.Where(o => o.OrderStatus == "Pending").ToList();
 
-            foreach (var o in pending)
+            if (!pendingOrders.Any())
+            {
+                Console.WriteLine("No pending orders found for this customer.");
+                return;
+            }
+
+            Console.WriteLine("Pending Orders:");
+            foreach (var o in pendingOrders)
+            {
                 Console.WriteLine(o.OrderId);
+            }
 
-            Console.Write("Order ID: ");
-            int id = int.Parse(Console.ReadLine());
+            Console.Write("Enter Order ID: ");
+            if (!int.TryParse(Console.ReadLine(), out int orderId))
+            {
+                Console.WriteLine("Invalid Order ID.");
+                return;
+            }
 
-            Order order = pending.Find(o => o.OrderId == id);
-            if (order == null) return;
+            Order orderToDelete = pendingOrders.Find(o => o.OrderId == orderId);
+            if (orderToDelete == null)
+            {
+                Console.WriteLine("Order not found in pending orders.");
+                return;
+            }
 
-            order.OrderStatus = "Cancelled";
-            refundStack.Push(order);
+            // Display basic order information
+            Console.WriteLine($"\nCustomer: {cust.Name}");
+            Console.WriteLine("Ordered Items:");
+            int count = 1;
+            foreach (var item in orderToDelete.OrderedItems)
+            {
+                Console.WriteLine($"{count}. {item.ItemName} - {item.QtyOrdered}");
+                count++;
+            }
+            Console.WriteLine($"Delivery date/time: {orderToDelete.DeliveryDateTime:dd/MM/yyyy HH:mm}");
+            Console.WriteLine($"Total Amount: ${orderToDelete.TotalAmount:F2}");
+            Console.WriteLine($"Order Status: {orderToDelete.OrderStatus}");
 
-            Console.WriteLine("Order cancelled.");
+            // Confirm deletion
+            Console.Write("Confirm deletion? [Y/N]: ");
+            string confirm = Console.ReadLine().Trim().ToUpper();
+
+            if (confirm == "Y")
+            {
+                orderToDelete.OrderStatus = "Cancelled";
+                refundStack.Push(orderToDelete);
+                Console.WriteLine($"Order {orderToDelete.OrderId} cancelled. Refund of ${orderToDelete.TotalAmount:F2} processed.");
+            }
+            else
+            {
+                Console.WriteLine("Order deletion cancelled.");
+            }
+
+            Console.WriteLine(); // spacing
         }
+
 
         // =========================
         // ADVANCED FEATURE A
@@ -755,5 +806,46 @@ namespace Gruberoo
             Console.WriteLine($"Preparing: {preparing}");
             Console.WriteLine($"Rejected: {rejected}");
         }
+
+        // =========================
+        // ADVANCED FEATURE B
+        // =========================
+        static void DisplayTotalOrderAmount()
+        {
+            const double deliveryFee = 5.0;
+            const double gruberooFeePercent = 0.3;
+
+            double grandTotalOrders = 0;
+            double grandTotalRefunds = 0;
+            double totalGruberooEarnings = 0;
+
+            foreach (var r in restaurants)
+            {
+                var deliveredOrders = r.OrderQueue.Where(o => o.OrderStatus == "Delivered").ToList();
+                var refundedOrders = r.OrderQueue.Where(o => o.OrderStatus == "Rejected" || o.OrderStatus == "Cancelled").ToList();
+
+                double restaurantTotal = deliveredOrders.Sum(o => o.TotalAmount - deliveryFee);
+                double restaurantRefunds = refundedOrders.Sum(o => o.TotalAmount);
+                double restaurantGruberoo = restaurantTotal * gruberooFeePercent;
+
+                Console.WriteLine($"Restaurant: {r.RestaurantName} ({r.RestaurantId})");
+                Console.WriteLine($"Delivered Orders Total: ${restaurantTotal:F2}");
+                Console.WriteLine($"Refunded Orders Total:  ${restaurantRefunds:F2}");
+                Console.WriteLine($"Gruberoo Earnings:      ${restaurantGruberoo:F2}\n");
+
+                grandTotalOrders += restaurantTotal;
+                grandTotalRefunds += restaurantRefunds;
+                totalGruberooEarnings += restaurantGruberoo;
+            }
+
+            Console.WriteLine("===== Summary =====");
+            Console.WriteLine($"Total Orders Amount: ${grandTotalOrders:F2}");
+            Console.WriteLine($"Total Refunds:       ${grandTotalRefunds:F2}");
+            Console.WriteLine($"Final Earnings:      ${totalGruberooEarnings:F2}");
+            Console.WriteLine("====================\n");
+
+        }
+
+
     }
 }
