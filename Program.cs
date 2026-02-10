@@ -43,6 +43,7 @@ namespace Gruberoo
                 Console.WriteLine("6. Delete an existing order");
                 Console.WriteLine("7. Bulk Process Orders (Advanced A)");
                 Console.WriteLine("8. Display total order amount (Advanced B)");
+                Console.WriteLine("9. Save changes");
                 Console.WriteLine("0. Exit");
                 Console.Write("Enter choice: ");
                 choice = Console.ReadLine();
@@ -57,7 +58,10 @@ namespace Gruberoo
                     case "6": DeleteOrder(); break;
                     case "7": BulkProcessOrders(); break;
                     case "8": DisplayTotalOrderAmount(); break;
-
+                    case "9":
+                        ExportQueueToCSV();
+                        ExportRefundStackToCSV();
+                        break;
                 }
 
                 Console.WriteLine("\nPress any key to continue...");
@@ -309,6 +313,8 @@ namespace Gruberoo
             Console.WriteLine($"{loaded} orders loaded!");
         }
 
+        
+
 
         // =========================
         // FEATURE 3
@@ -469,6 +475,11 @@ namespace Gruberoo
             cust.AddOrder(order);
             rest.AddOrderToQueue(order);
             Console.WriteLine($"Order {order.OrderId} created!");
+
+            // ✅ Automatically save CSVs
+            ExportQueueToCSV();
+            ExportRefundStackToCSV();
+
         }
 
         // =========================
@@ -552,6 +563,9 @@ namespace Gruberoo
                                 o.OrderStatus = "Preparing";
                                 Console.WriteLine($"Order {o.OrderId} confirmed. Status: {o.OrderStatus}");
                                 validAction = true;
+
+                                ExportQueueToCSV();
+                                ExportRefundStackToCSV();
                             }
                             else Console.WriteLine("Cannot confirm: Order is not Pending.");
                             break;
@@ -563,6 +577,9 @@ namespace Gruberoo
                                 refundStack.Push(o);
                                 Console.WriteLine($"Order {o.OrderId} rejected. Status: {o.OrderStatus}");
                                 validAction = true;
+
+                                ExportQueueToCSV();
+                                ExportRefundStackToCSV();
                             }
                             else Console.WriteLine("Cannot reject: Order is not Pending.");
                             break;
@@ -572,6 +589,9 @@ namespace Gruberoo
                             {
                                 Console.WriteLine($"Order {o.OrderId} skipped. Status: {o.OrderStatus}");
                                 validAction = true;
+
+                                ExportQueueToCSV();
+                                ExportRefundStackToCSV();
                             }
                             else Console.WriteLine("Cannot skip: Order is not Cancelled.");
                             break;
@@ -582,6 +602,9 @@ namespace Gruberoo
                                 o.OrderStatus = "Delivered";
                                 Console.WriteLine($"Order {o.OrderId} delivered. Status: {o.OrderStatus}");
                                 validAction = true;
+
+                                ExportQueueToCSV();
+                                ExportRefundStackToCSV();
                             }
                             else Console.WriteLine("Cannot deliver: Order is not Preparing.");
                             break;
@@ -629,6 +652,10 @@ namespace Gruberoo
             order.TotalAmount = double.Parse(Console.ReadLine());
 
             Console.WriteLine("Order updated.");
+
+
+            ExportQueueToCSV();
+            ExportRefundStackToCSV();
         }
 
         // =========================
@@ -704,6 +731,9 @@ namespace Gruberoo
             }
 
             Console.WriteLine(); // spacing
+
+            ExportQueueToCSV();
+            ExportRefundStackToCSV();
         }
 
 
@@ -781,6 +811,64 @@ namespace Gruberoo
             Console.WriteLine("====================\n");
 
         }
+
+        // =========================
+        // EXPORT QUEUE AND STACK TO CSV
+        // =========================
+        static void ExportQueueToCSV()
+        {
+            string filePath = "queue.csv";
+            var lines = new List<string>();
+
+            // Header
+            lines.Add("OrderId,CustomerEmail,RestaurantId,DeliveryDate,DeliveryTime,CreatedDate,CreatedTime,Status,Items");
+
+            foreach (var r in restaurants)
+            {
+                foreach (var o in r.OrderQueue)
+                {
+                    string customerEmail = customers.FirstOrDefault(c => c.OrderList.Contains(o))?.Email ?? "Unknown";
+                    string itemsStr = string.Join("|", o.OrderedItems.Select(i => $"{i.ItemName},{i.QtyOrdered}"));
+
+                    string line = $"{o.OrderId},{customerEmail},{r.RestaurantId}," +
+                                  $"{o.DeliveryDateTime:dd/MM/yyyy},{o.DeliveryDateTime:HH:mm}," +
+                                  $"{o.OrderDateTime:dd/MM/yyyy},{o.OrderDateTime:HH:mm}," +
+                                  $"{o.OrderStatus},{itemsStr}";
+
+                    lines.Add(line);
+                }
+            }
+
+            File.WriteAllLines(filePath, lines);
+            Console.WriteLine($"Queue saved to {filePath}!");
+        }
+
+        static void ExportRefundStackToCSV()
+        {
+            string filePath = "refunds.csv";
+            var lines = new List<string>();
+
+            // Header
+            lines.Add("OrderId,CustomerEmail,RestaurantId,DeliveryDate,DeliveryTime,CreatedDate,CreatedTime,Status,Items");
+
+            foreach (var o in refundStack.Reverse()) // Reverse so oldest is first
+            {
+                string customerEmail = customers.FirstOrDefault(c => c.OrderList.Contains(o))?.Email ?? "Unknown";
+                string restaurantId = o.Restaurant?.RestaurantId ?? "Unknown";
+                string itemsStr = string.Join("|", o.OrderedItems.Select(i => $"{i.ItemName},{i.QtyOrdered}"));
+
+                string line = $"{o.OrderId},{customerEmail},{restaurantId}," +
+                              $"{o.DeliveryDateTime:dd/MM/yyyy},{o.DeliveryDateTime:HH:mm}," +
+                              $"{o.OrderDateTime:dd/MM/yyyy},{o.OrderDateTime:HH:mm}," +
+                              $"{o.OrderStatus},{itemsStr}";
+
+                lines.Add(line);
+            }
+
+            File.WriteAllLines(filePath, lines);
+            Console.WriteLine($"Refund stack saved to {filePath}!");
+        }
+
 
 
     }
