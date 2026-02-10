@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using PRG_Final_ASG;
 
 namespace Gruberoo
@@ -65,18 +66,46 @@ namespace Gruberoo
         // =========================
         // FEATURE 1 & 2 – LOAD FILES
         // =========================
-
         static void LoadCustomers()
         {
-            if (!File.Exists("customers.csv")) return;
-            var lines = File.ReadAllLines("customers.csv");
+            string filePath = "customers.csv";
 
-            for (int i = 1; i < lines.Length; i++)
+            if (!File.Exists(filePath))
+            {
+                Console.WriteLine("customers.csv NOT FOUND");
+                return;
+            }
+
+            var lines = File.ReadAllLines(filePath);
+            int loaded = 0;
+
+            for (int i = 1; i < lines.Length; i++) // skip header
             {
                 var data = lines[i].Split(',');
-                customers.Add(new Customer(data[0], data[1]));
+
+                if (data.Length != 2) continue; // skip lines with unexpected format
+
+                try
+                {
+                    string name = data[0].Trim();
+                    string email = data[1].Trim();
+
+                    // Add customer
+                    customers.Add(new Customer(email, name));
+                    loaded++;
+                }
+                catch
+                {
+                    // silently skip invalid lines
+                    continue;
+                }
             }
+
+            Console.WriteLine($"Customers loaded: {loaded}");
         }
+
+
+
         static void LoadRestaurants()
         {
             if (!File.Exists("restaurants.csv"))
@@ -116,7 +145,6 @@ namespace Gruberoo
 
             for (int i = 1; i < lines.Length; i++) // skip header
             {
-                Console.WriteLine(lines.Length-i);
                 var data = lines[i].Split(',');
 
 
@@ -124,10 +152,6 @@ namespace Gruberoo
                 string itemName = data[1].Trim();
                 string description = data[2].Trim();
                 string priceStr = data[3].Trim();
-                Console.WriteLine(restaurantId);
-                Console.WriteLine(itemName);
-                Console.WriteLine(description);
-                Console.WriteLine(priceStr);
 
                 double.TryParse(priceStr, out double price);
 
@@ -136,67 +160,122 @@ namespace Gruberoo
                 if (r == null) continue;
 
                 r.AddFoodItem(new FoodItem(itemName, description, price));
-                Console.WriteLine($"Line {i}: ✅ Added '{itemName}' to restaurant '{r.RestaurantName}' (ID: {restaurantId})");
-            }
-            foreach (var r in restaurants)
-            {
-                Console.WriteLine($"\n{r.RestaurantName} ({r.RestaurantId}) has {r.FoodItems.Count} items:");
-                foreach (var f in r.FoodItems)
-                    Console.WriteLine($" - {f}");
             }
         }
-
         static void LoadOrders()
         {
-            if (!File.Exists("orders.csv"))
+            string filePath = "orders.csv";
+
+            if (!File.Exists(filePath))
             {
                 Console.WriteLine("orders.csv NOT FOUND");
                 return;
             }
 
-            var lines = File.ReadAllLines("orders.csv");
+            var lines = File.ReadAllLines(filePath);
             int loaded = 0;
 
-            for (int i = 1; i < lines.Length; i++)
+            for (int i = 1; i < lines.Length; i++) // skip header
             {
-                // 🔥 TAB-separated
-                var data = lines[i].Split('\t');
+                string line = lines[i].Trim();
+                if (string.IsNullOrEmpty(line)) continue;
 
-                if (data.Length < 9) continue;
+                // Custom split to handle quoted fields (especially "Items")
+                List<string> data = new List<string>();
+                bool inQuotes = false;
+                StringBuilder sb = new StringBuilder();
 
-                int orderId = int.Parse(data[0]);
-                string customerEmail = data[1].Trim();
-                string restaurantId = data[2].Trim();
+                foreach (char c in line)
+                {
+                    if (c == '"')
+                    {
+                        inQuotes = !inQuotes;
+                        continue;
+                    }
 
-                DateTime deliveryDateTime =
-                    DateTime.Parse($"{data[3]} {data[4]}");
+                    if (c == ',' && !inQuotes)
+                    {
+                        data.Add(sb.ToString());
+                        sb.Clear();
+                    }
+                    else
+                    {
+                        sb.Append(c);
+                    }
+                }
+                data.Add(sb.ToString()); // last element
 
-                DateTime createdDateTime =
-                    DateTime.Parse(data[6]);
+                if (data.Count < 10) continue; // skip incomplete lines
 
-                double totalAmount =
-                    double.Parse(data[7]);
+                try
+                {
+                    int orderId = int.Parse(data[0].Trim());
+                    string customerEmail = data[1].Trim();
+                    string restaurantId = data[2].Trim();
 
-                string status = data[8].Trim();
+                    DateTime deliveryDateTime = DateTime.ParseExact(
+                        $"{data[3].Trim()} {data[4].Trim()}",
+                        "dd/MM/yyyy HH:mm",
+                        System.Globalization.CultureInfo.InvariantCulture
+                    );
 
-                Order order = new Order();
-                order.OrderId = orderId;
-                order.OrderDateTime = createdDateTime;
-                order.DeliveryDateTime = deliveryDateTime;
-                order.TotalAmount = totalAmount;
-                order.OrderStatus = status;
+                    DateTime createdDateTime = DateTime.ParseExact(
+                        data[6].Trim(),
+                        "dd/MM/yyyy HH:mm",
+                        System.Globalization.CultureInfo.InvariantCulture
+                    );
 
-                Customer c = customers.Find(x => x.Email == customerEmail);
-                Restaurant r = restaurants.Find(x => x.RestaurantId == restaurantId);
+                    double totalAmount = double.Parse(data[7].Trim());
+                    string status = data[8].Trim();
+                    string items = data[9].Trim(); // all remaining items combined
 
-                if (c != null) c.AddOrder(order);
-                if (r != null) r.AddOrderToQueue(order);
+                    // Create Order object
+                    Order order = new Order
+                    {
+                        OrderId = orderId,
+                        OrderDateTime = createdDateTime,
+                        DeliveryDateTime = deliveryDateTime,
+                        TotalAmount = totalAmount,
+                        OrderStatus = status
+                    };
 
-                loaded++;
+                    // Handle Customer
+                    Customer c = customers.Find(x => x.Email == customerEmail);
+                    if (c == null)
+                    {
+                        string generatedName = customerEmail.Split('@')[0]
+                                                        .Replace('.', ' ')
+                                                        .Replace('_', ' ');
+                        generatedName = string.Join(" ", generatedName
+                            .Split(' ')
+                            .Select(word => char.ToUpper(word[0]) + word.Substring(1)));
+
+                        c = new Customer(generatedName, customerEmail);
+                        customers.Add(c);
+                    }
+
+                    c.AddOrder(order);
+
+                    // Handle Restaurant
+                    Restaurant r = restaurants.Find(x => x.RestaurantId == restaurantId);
+                    if (r != null)
+                    {
+                        r.AddOrderToQueue(order);
+                        order.Restaurant = r;
+                    }
+
+                    loaded++;
+                }
+                catch
+                {
+                    // silently skip invalid lines
+                    continue;
+                }
             }
 
             Console.WriteLine($"Orders loaded: {loaded}");
         }
+
 
 
         static int GenerateNewOrderId()
@@ -239,17 +318,36 @@ namespace Gruberoo
         // FEATURE 4
         // =========================
         static void ListAllOrders()
-        {
-            foreach (Customer c in customers)
-            {
-                foreach (Order o in c.OrderList)
-                {
-                    Console.WriteLine(
-                        $"{o.OrderId} | {c.Name} | ${o.TotalAmount:F2} | {o.OrderStatus}"
-                    );
-                }
-            }
-        }
+{
+    Console.WriteLine("All Orders");
+    Console.WriteLine("==========");
+    Console.WriteLine("{0,-8} {1,-15} {2,-15} {3,-18} {4,-8} {5,-10}",
+        "Order ID", "Customer", "Restaurant", "Delivery Date/Time", "Amount", "Status");
+    Console.WriteLine("{0,-8} {1,-15} {2,-15} {3,-18} {4,-8} {5,-10}",
+        "--------", "---------------", "---------------", "------------------", "------", "---------");
+
+    // Flatten all orders from all customers
+    var allOrders = customers
+        .SelectMany(c => c.OrderList.Select(o => new { Order = o, CustomerName = c.Name }))
+        .OrderBy(x => x.Order.OrderId); // sort globally by OrderId
+
+    foreach (var x in allOrders)
+    {
+        string restaurantName = x.Order.Restaurant?.RestaurantName ?? "Unknown";
+
+        Console.WriteLine("{0,-8} {1,-15} {2,-15} {3,-18} {4,-8:C} {5,-10}",
+            x.Order.OrderId,
+            x.CustomerName,
+            restaurantName,
+            x.Order.DeliveryDateTime.ToString("dd/MM/yyyy HH:mm"),
+            x.Order.TotalAmount,
+            x.Order.OrderStatus);
+    }
+
+    Console.WriteLine();
+}
+
+
 
         // =========================
         // FEATURE 5
