@@ -73,6 +73,8 @@ namespace PRG_Final_ASG
         // expose ordered items
         public List<OrderedFoodItem> OrderedItems => orderedFoodItems;
 
+        public Restaurant Restaurant { get; internal set; }
+
         // existing API
         public double CalculateOrderTotal()
         {
