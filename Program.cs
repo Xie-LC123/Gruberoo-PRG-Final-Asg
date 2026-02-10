@@ -116,25 +116,33 @@ namespace Gruberoo
 
             for (int i = 1; i < lines.Length; i++) // skip header
             {
+                Console.WriteLine(lines.Length-i);
                 var data = lines[i].Split(',');
 
-                if (data.Length < 4) continue;
 
                 string restaurantId = data[0].Trim();
                 string itemName = data[1].Trim();
                 string description = data[2].Trim();
                 string priceStr = data[3].Trim();
+                Console.WriteLine(restaurantId);
+                Console.WriteLine(itemName);
+                Console.WriteLine(description);
+                Console.WriteLine(priceStr);
 
-                if (!double.TryParse(priceStr, System.Globalization.NumberStyles.Any,
-                    System.Globalization.CultureInfo.InvariantCulture, out double price))
-                {
-                    continue;
-                }
+                double.TryParse(priceStr, out double price);
+
 
                 Restaurant r = restaurants.Find(x => x.RestaurantId.Trim() == restaurantId);
                 if (r == null) continue;
 
                 r.AddFoodItem(new FoodItem(itemName, description, price));
+                Console.WriteLine($"Line {i}: ✅ Added '{itemName}' to restaurant '{r.RestaurantName}' (ID: {restaurantId})");
+            }
+            foreach (var r in restaurants)
+            {
+                Console.WriteLine($"\n{r.RestaurantName} ({r.RestaurantId}) has {r.FoodItems.Count} items:");
+                foreach (var f in r.FoodItems)
+                    Console.WriteLine($" - {f}");
             }
         }
 
@@ -195,7 +203,7 @@ namespace Gruberoo
         {
             return ++nextOrderId;
         }
-
+            
         // =========================
         // FEATURE 3
         // =========================
