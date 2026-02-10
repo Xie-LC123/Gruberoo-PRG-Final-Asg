@@ -1,8 +1,7 @@
 ﻿//==========================================================
-// Student Number : S10271327
-// Student Name : Xie Liangchen
 // Student Number : S10273654
 // Student Name : Chiam Sheng Le
+// Partner Name : Xie Liangchen
 //==========================================================
 
 using System;
@@ -59,6 +58,8 @@ namespace Gruberoo
                 Console.WriteLine("5. Modify an existing order");
                 Console.WriteLine("6. Delete an existing order");
                 Console.WriteLine("7. Bulk Process Orders (Advanced A)");
+                Console.WriteLine("8. Display total order amount (Advanced B)");
+                Console.WriteLine("9. Save changes");
                 Console.WriteLine("0. Exit");
                 Console.Write("Enter choice: ");
                 choice = Console.ReadLine();
@@ -72,6 +73,11 @@ namespace Gruberoo
                     case "5": ModifyOrder(); break;
                     case "6": DeleteOrder(); break;
                     case "7": BulkProcessOrders(); break;
+                    case "8": DisplayTotalOrderAmount(); break;
+                    case "9":
+                        ExportQueueToCSV();
+                        ExportRefundStackToCSV();
+                        break;
                 }
 
                 Console.WriteLine("\nPress any key to continue...");
@@ -86,7 +92,7 @@ namespace Gruberoo
 
 
         // =========================
-        // FEATURE 1 & 2 – LOAD FILES
+        // FEATURE 1 & 2 – LOAD FILES (1 BY: Chiam Sheng Le)
         // =========================
         static void LoadCustomers()
         {
@@ -323,6 +329,8 @@ namespace Gruberoo
             Console.WriteLine($"{loaded} orders loaded!");
         }
 
+        
+
 
         // =========================
         // FEATURE 3
@@ -356,7 +364,7 @@ namespace Gruberoo
 
 
         // =========================
-        // FEATURE 4
+        // FEATURE 4 (BY: Chiam Sheng Le)
         // =========================
         static void ListAllOrders()
         {
@@ -381,7 +389,7 @@ namespace Gruberoo
                     x.CustomerName,
                     restaurantName,
                     x.Order.DeliveryDateTime.ToString("dd/MM/yyyy HH:mm"),
-                    x.Order.TotalAmount,
+                    x.Order.TotalAmount+5,
                     x.Order.OrderStatus);
             }
 
@@ -406,7 +414,7 @@ namespace Gruberoo
                     x.customerName,
                     restaurantName,
                     x.order.DeliveryDateTime.ToString("dd/MM/yyyy HH:mm"),
-                    x.order.TotalAmount,
+                    x.order.TotalAmount+5,
                     x.order.OrderStatus);
             }
 
@@ -552,74 +560,17 @@ namespace Gruberoo
             rest.AddOrderToQueue(order);
 
             Console.WriteLine($"\nOrder {order.OrderId} created successfully! Status: Pending");
+            Console.WriteLine($"Order {order.OrderId} created!");
+
+            // ✅ Automatically save CSVs
+            ExportQueueToCSV();
+            ExportRefundStackToCSV();
+            //fb85aeb506420beee0605d4ab6720499125ad568
         }
 
         // =========================
-        // FEATURE 6
+        // FEATURE 6 (BY: Chiam Sheng Le)
         // =========================
-        //static void ProcessOrder()
-        //{
-        //    Console.Write("Enter Restaurant ID: ");
-        //    string id = Console.ReadLine();
-
-        //    Restaurant r = restaurants.Find(x => x.RestaurantId == id);
-        //    if (r == null)
-        //    {
-        //        Console.WriteLine("Restaurant not found!");
-        //        return;
-        //    }
-
-        //    foreach (Order o in r.OrderQueue)
-        //    {
-        //        // Show basic order info
-        //        Console.WriteLine($"{o.OrderId} - {o.OrderStatus}");
-        //        Console.WriteLine($"Order {o.OrderId}:");
-        //        Console.WriteLine($"Customer: {o.Restaurant != null ? o.Restaurant.RestaurantName : "Unknown"}");
-        //        // Or if you have a Customer object linked to Order, use o.CustomerName
-
-        //        // Ordered items dynamically
-        //        Console.WriteLine("Ordered Items:");
-        //        if (o.OrderedItems.Count > 0)
-        //        {
-        //            int count = 1;
-        //            foreach (var item in o.OrderedItems)
-        //            {
-        //                Console.WriteLine($"{count}. {item.Name} - {item.Quantity}");
-        //                count++;
-        //            }
-        //        }
-        //        else
-        //        {
-        //            Console.WriteLine("No items found.");
-        //        }
-
-        //        // Delivery time
-        //        Console.WriteLine($"Delivery date/time: {o.DeliveryDateTime:dd/MM/yyyy HH:mm}");
-
-        //        // Total and status
-        //        Console.WriteLine($"Total Amount: ${o.TotalAmount:F2}");
-        //        Console.WriteLine($"Order Status: {o.OrderStatus}");
-
-        //        // Ask for action
-        //        Console.Write("[C]onfirm / [R]eject / [S]kip / [D]eliver: ");
-        //        string choice = Console.ReadLine().ToUpper();
-
-        //        if (choice == "C" && o.OrderStatus == "Pending")
-        //            o.OrderStatus = "Preparing";
-
-        //        else if (choice == "R" && o.OrderStatus == "Pending")
-        //        {
-        //            o.OrderStatus = "Rejected";
-        //            refundStack.Push(o); // assuming you have a stack for refunds
-        //        }
-
-        //        else if (choice == "D" && o.OrderStatus == "Preparing")
-        //            o.OrderStatus = "Delivered";
-
-        //        Console.WriteLine(); // extra line for readability
-        //    }
-        //}
-
         static void ProcessOrder()
         {
             Console.Write("Enter Restaurant ID: ");
@@ -698,6 +649,9 @@ namespace Gruberoo
                                 o.OrderStatus = "Preparing";
                                 Console.WriteLine($"Order {o.OrderId} confirmed. Status: {o.OrderStatus}");
                                 validAction = true;
+
+                                ExportQueueToCSV();
+                                ExportRefundStackToCSV();
                             }
                             else Console.WriteLine("Cannot confirm: Order is not Pending.");
                             break;
@@ -709,6 +663,9 @@ namespace Gruberoo
                                 refundStack.Push(o);
                                 Console.WriteLine($"Order {o.OrderId} rejected. Status: {o.OrderStatus}");
                                 validAction = true;
+
+                                ExportQueueToCSV();
+                                ExportRefundStackToCSV();
                             }
                             else Console.WriteLine("Cannot reject: Order is not Pending.");
                             break;
@@ -718,6 +675,9 @@ namespace Gruberoo
                             {
                                 Console.WriteLine($"Order {o.OrderId} skipped. Status: {o.OrderStatus}");
                                 validAction = true;
+
+                                ExportQueueToCSV();
+                                ExportRefundStackToCSV();
                             }
                             else Console.WriteLine("Cannot skip: Order is not Cancelled.");
                             break;
@@ -728,6 +688,9 @@ namespace Gruberoo
                                 o.OrderStatus = "Delivered";
                                 Console.WriteLine($"Order {o.OrderId} delivered. Status: {o.OrderStatus}");
                                 validAction = true;
+
+                                ExportQueueToCSV();
+                                ExportRefundStackToCSV();
                             }
                             else Console.WriteLine("Cannot deliver: Order is not Preparing.");
                             break;
@@ -751,7 +714,7 @@ namespace Gruberoo
 
 
         // =========================
-        // FEATURE 7
+        // FEATURE 7 
         // =========================
         static void ModifyOrder()
         {
@@ -834,35 +797,92 @@ namespace Gruberoo
             {
                 Console.WriteLine("Invalid choice.");
             }
+            Console.WriteLine("Order updated.");
+
+
+            ExportQueueToCSV();
+            ExportRefundStackToCSV(); 
+            //fb85aeb506420beee0605d4ab6720499125ad568
         }
 
         // =========================
-        // FEATURE 8
+        // FEATURE 8 (BY: Chiam Sheng Le)
         // =========================
         static void DeleteOrder()
         {
-            Console.Write("Customer Email: ");
-            string email = Console.ReadLine();
+            Console.Write("Enter Customer Email: ");
+            string email = Console.ReadLine().Trim();
 
-            Customer cust = customers.Find(x => x.Email == email);
-            if (cust == null) return;
+            Customer cust = customers.Find(c => c.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
+            if (cust == null)
+            {
+                Console.WriteLine("Customer not found.");
+                return;
+            }
 
-            var pending = cust.OrderList.Where(o => o.OrderStatus == "Pending").ToList();
+            // Get pending orders
+            var pendingOrders = cust.OrderList.Where(o => o.OrderStatus == "Pending").ToList();
 
-            foreach (var o in pending)
+            if (!pendingOrders.Any())
+            {
+                Console.WriteLine("No pending orders found for this customer.");
+                return;
+            }
+
+            Console.WriteLine("Pending Orders:");
+            foreach (var o in pendingOrders)
+            {
                 Console.WriteLine(o.OrderId);
+            }
 
-            Console.Write("Order ID: ");
-            int id = int.Parse(Console.ReadLine());
+            Console.Write("Enter Order ID: ");
+            if (!int.TryParse(Console.ReadLine(), out int orderId))
+            {
+                Console.WriteLine("Invalid Order ID.");
+                return;
+            }
 
-            Order order = pending.Find(o => o.OrderId == id);
-            if (order == null) return;
+            Order orderToDelete = pendingOrders.Find(o => o.OrderId == orderId);
+            if (orderToDelete == null)
+            {
+                Console.WriteLine("Order not found in pending orders.");
+                return;
+            }
 
-            order.OrderStatus = "Cancelled";
-            refundStack.Push(order);
+            // Display basic order information
+            Console.WriteLine($"\nCustomer: {cust.Name}");
+            Console.WriteLine("Ordered Items:");
+            int count = 1;
+            foreach (var item in orderToDelete.OrderedItems)
+            {
+                Console.WriteLine($"{count}. {item.ItemName} - {item.QtyOrdered}");
+                count++;
+            }
+            Console.WriteLine($"Delivery date/time: {orderToDelete.DeliveryDateTime:dd/MM/yyyy HH:mm}");
+            Console.WriteLine($"Total Amount: ${orderToDelete.TotalAmount:F2}");
+            Console.WriteLine($"Order Status: {orderToDelete.OrderStatus}");
 
-            Console.WriteLine("Order cancelled.");
+            // Confirm deletion
+            Console.Write("Confirm deletion? [Y/N]: ");
+            string confirm = Console.ReadLine().Trim().ToUpper();
+
+            if (confirm == "Y")
+            {
+                orderToDelete.OrderStatus = "Cancelled";
+                refundStack.Push(orderToDelete);
+                Console.WriteLine($"Order {orderToDelete.OrderId} cancelled. Refund of ${orderToDelete.TotalAmount:F2} processed.");
+            }
+            else
+            {
+                Console.WriteLine("Order deletion cancelled.");
+            }
+
+            Console.WriteLine(); // spacing
+
+            ExportQueueToCSV();
+            ExportRefundStackToCSV();
         }
+
 
         // =========================
         // ADVANCED FEATURE A
@@ -899,5 +919,104 @@ namespace Gruberoo
             Console.WriteLine($"Preparing: {preparing}");
             Console.WriteLine($"Rejected: {rejected}");
         }
+
+        // =========================
+        // ADVANCED FEATURE B (BY: Chiam Sheng Le)
+        // =========================
+        static void DisplayTotalOrderAmount()
+        {
+            const double deliveryFee = 5.0;
+            const double gruberooFeePercent = 0.3;
+
+            double grandTotalOrders = 0;
+            double grandTotalRefunds = 0;
+            double totalGruberooEarnings = 0;
+
+            foreach (var r in restaurants)
+            {
+                var deliveredOrders = r.OrderQueue.Where(o => o.OrderStatus == "Delivered").ToList();
+                var refundedOrders = r.OrderQueue.Where(o => o.OrderStatus == "Rejected" || o.OrderStatus == "Cancelled").ToList();
+
+                double restaurantTotal = deliveredOrders.Sum(o => o.TotalAmount + deliveryFee);
+                double restaurantRefunds = refundedOrders.Sum(o => o.TotalAmount + deliveryFee);
+                double restaurantGruberoo = restaurantTotal * gruberooFeePercent;
+
+                Console.WriteLine($"Restaurant: {r.RestaurantName} ({r.RestaurantId})");
+                Console.WriteLine($"Delivered Orders Total: ${restaurantTotal:F2}");
+                Console.WriteLine($"Refunded Orders Total:  ${restaurantRefunds:F2}");
+                Console.WriteLine($"Gruberoo Earnings:      ${restaurantGruberoo:F2}\n");
+
+                grandTotalOrders += restaurantTotal;
+                grandTotalRefunds += restaurantRefunds;
+                totalGruberooEarnings += restaurantGruberoo;
+            }
+
+            Console.WriteLine("===== Summary =====");
+            Console.WriteLine($"Total Orders Amount: ${grandTotalOrders:F2}");
+            Console.WriteLine($"Total Refunds:       ${grandTotalRefunds:F2}");
+            Console.WriteLine($"Final Earnings:      ${totalGruberooEarnings:F2}");
+            Console.WriteLine("====================\n");
+
+        }
+
+        // =========================
+        // EXPORT QUEUE AND STACK TO CSV
+        // =========================
+        static void ExportQueueToCSV()
+        {
+            string filePath = "queue.csv";
+            var lines = new List<string>();
+
+            // Header
+            lines.Add("OrderId,CustomerEmail,RestaurantId,DeliveryDate,DeliveryTime,CreatedDate,CreatedTime,Status,Items");
+
+            foreach (var r in restaurants)
+            {
+                foreach (var o in r.OrderQueue)
+                {
+                    string customerEmail = customers.FirstOrDefault(c => c.OrderList.Contains(o))?.Email ?? "Unknown";
+                    string itemsStr = string.Join("|", o.OrderedItems.Select(i => $"{i.ItemName},{i.QtyOrdered}"));
+
+                    string line = $"{o.OrderId},{customerEmail},{r.RestaurantId}," +
+                                  $"{o.DeliveryDateTime:dd/MM/yyyy},{o.DeliveryDateTime:HH:mm}," +
+                                  $"{o.OrderDateTime:dd/MM/yyyy},{o.OrderDateTime:HH:mm}," +
+                                  $"{o.OrderStatus},{itemsStr}";
+
+                    lines.Add(line);
+                }
+            }
+
+            File.WriteAllLines(filePath, lines);
+            Console.WriteLine($"Queue saved to {filePath}!");
+        }
+
+        static void ExportRefundStackToCSV()
+        {
+            string filePath = "refunds.csv";
+            var lines = new List<string>();
+
+            // Header
+            lines.Add("OrderId,CustomerEmail,RestaurantId,DeliveryDate,DeliveryTime,CreatedDate,CreatedTime,Status,Items");
+
+            foreach (var o in refundStack.Reverse()) // Reverse so oldest is first
+            {
+                string customerEmail = customers.FirstOrDefault(c => c.OrderList.Contains(o))?.Email ?? "Unknown";
+                string restaurantId = o.Restaurant?.RestaurantId ?? "Unknown";
+                string itemsStr = string.Join("|", o.OrderedItems.Select(i => $"{i.ItemName},{i.QtyOrdered}"));
+
+                string line = $"{o.OrderId},{customerEmail},{restaurantId}," +
+                              $"{o.DeliveryDateTime:dd/MM/yyyy},{o.DeliveryDateTime:HH:mm}," +
+                              $"{o.OrderDateTime:dd/MM/yyyy},{o.OrderDateTime:HH:mm}," +
+                              $"{o.OrderStatus},{itemsStr}";
+
+                lines.Add(line);
+            }
+
+            File.WriteAllLines(filePath, lines);
+            Console.WriteLine($"Refund stack saved to {filePath}!");
+        }
+
+
+
     }
 }

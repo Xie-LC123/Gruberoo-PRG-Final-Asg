@@ -62,6 +62,14 @@ namespace PRG_Final_ASG
             if (order != null)
                 orderQueue.Add(order);
         }
+        public bool RemoveOrder(Order order)
+        {
+            if (order == null)
+                return false;
+
+            return orderQueue.Remove(order);
+        }
+
 
         public void AddMenu(Menu menu)
         {
