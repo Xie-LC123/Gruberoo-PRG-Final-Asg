@@ -53,6 +53,7 @@ namespace Gruberoo
                     case "5": ModifyOrder(); break;
                     case "6": DeleteOrder(); break;
                     case "7": BulkProcessOrders(); break;
+                    case "8": LoadFoodItems(); break;
                 }
 
                 Console.WriteLine("\nPress any key to continue...");
@@ -76,56 +77,119 @@ namespace Gruberoo
                 customers.Add(new Customer(data[0], data[1]));
             }
         }
-
         static void LoadRestaurants()
         {
-            if (!File.Exists("restaurants.csv")) return;
+            if (!File.Exists("restaurants.csv"))
+            {
+                Console.WriteLine("restaurants.csv not found");
+                return;
+            }
+
             var lines = File.ReadAllLines("restaurants.csv");
 
             for (int i = 1; i < lines.Length; i++)
             {
                 var data = lines[i].Split(',');
-                restaurants.Add(new Restaurant(data[0], data[1]));
+
+                // ✅ 3 arguments
+                restaurants.Add(
+                    new Restaurant(
+                        data[0].Trim(), // RestaurantId
+                        data[1].Trim(), // RestaurantName
+                        data[2].Trim()  // RestaurantEmail
+                    )
+                );
             }
+
+            Console.WriteLine($"Restaurants loaded: {restaurants.Count}");
         }
 
         static void LoadFoodItems()
         {
-            if (!File.Exists("fooditems.csv")) return;
+            if (!File.Exists("fooditems.csv"))
+            {
+                Console.WriteLine("fooditems.csv not found");
+                return;
+            }
+
             var lines = File.ReadAllLines("fooditems.csv");
 
-            for (int i = 1; i < lines.Length; i++)
+            for (int i = 1; i < lines.Length; i++) // skip header
             {
                 var data = lines[i].Split(',');
-                FoodItem item = new FoodItem(data[0], data[1], double.Parse(data[2]));
 
-                Restaurant r = restaurants.Find(x => x.RestaurantId == data[3]);
-                if (r != null) r.AddFoodItem(item);
+                if (data.Length < 4) continue;
+
+                string restaurantId = data[0].Trim();
+                string itemName = data[1].Trim();
+                string description = data[2].Trim();
+                string priceStr = data[3].Trim();
+
+                if (!double.TryParse(priceStr, System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture, out double price))
+                {
+                    continue;
+                }
+
+                Restaurant r = restaurants.Find(x => x.RestaurantId.Trim() == restaurantId);
+                if (r == null) continue;
+
+                r.AddFoodItem(new FoodItem(itemName, description, price));
             }
         }
 
         static void LoadOrders()
         {
-            if (!File.Exists("orders.csv")) return;
+            if (!File.Exists("orders.csv"))
+            {
+                Console.WriteLine("orders.csv NOT FOUND");
+                return;
+            }
+
             var lines = File.ReadAllLines("orders.csv");
+            int loaded = 0;
 
             for (int i = 1; i < lines.Length; i++)
             {
-                var data = lines[i].Split(',');
+                // 🔥 TAB-separated
+                var data = lines[i].Split('\t');
 
-                Order order = new Order(
-                    int.Parse(data[0]),
-                    double.Parse(data[4]),
-                    data[5]
-                );
+                if (data.Length < 9) continue;
 
-                Customer c = customers.Find(x => x.Email == data[1]);
-                Restaurant r = restaurants.Find(x => x.RestaurantId == data[2]);
+                int orderId = int.Parse(data[0]);
+                string customerEmail = data[1].Trim();
+                string restaurantId = data[2].Trim();
+
+                DateTime deliveryDateTime =
+                    DateTime.Parse($"{data[3]} {data[4]}");
+
+                DateTime createdDateTime =
+                    DateTime.Parse(data[6]);
+
+                double totalAmount =
+                    double.Parse(data[7]);
+
+                string status = data[8].Trim();
+
+                Order order = new Order();
+                order.OrderId = orderId;
+                order.OrderDateTime = createdDateTime;
+                order.DeliveryDateTime = deliveryDateTime;
+                order.TotalAmount = totalAmount;
+                order.OrderStatus = status;
+
+                Customer c = customers.Find(x => x.Email == customerEmail);
+                Restaurant r = restaurants.Find(x => x.RestaurantId == restaurantId);
 
                 if (c != null) c.AddOrder(order);
                 if (r != null) r.AddOrderToQueue(order);
+
+                loaded++;
             }
+
+            Console.WriteLine($"Orders loaded: {loaded}");
         }
+
 
         static int GenerateNewOrderId()
         {
@@ -137,16 +201,31 @@ namespace Gruberoo
         // =========================
         static void ListAllRestaurants()
         {
+            Console.WriteLine("All Restaurants and Menu Items");
+            Console.WriteLine("==============================");
+
             foreach (Restaurant r in restaurants)
             {
-                Console.WriteLine($"\n{r.RestaurantName} ({r.RestaurantId})");
+                Console.WriteLine($"Restaurant: {r.RestaurantName} ({r.RestaurantId})");
 
-                foreach (FoodItem f in r.FoodItems)
+                if (r.FoodItems.Count == 0)
                 {
-                    Console.WriteLine($"- {f.ItemName} - ${f.Price:F2}");
+                    Console.WriteLine("- No menu items available");
                 }
+                else
+                {
+                    foreach (FoodItem f in r.FoodItems)
+                    {
+                        Console.WriteLine(
+                            $"- {f.ItemName}: {f.Description} - ${f.Price:F2}"
+                        );
+                    }
+                }
+
+                Console.WriteLine(); // spacing between restaurants
             }
         }
+
 
         // =========================
         // FEATURE 4
@@ -193,12 +272,9 @@ namespace Gruberoo
                 Console.WriteLine($"{f.ItemName} - ${f.Price}");
                 total += f.Price; // simple version
             }
-
             order.TotalAmount = total + 5;
-
             cust.AddOrder(order);
             rest.AddOrderToQueue(order);
-
             Console.WriteLine($"Order {order.OrderId} created!");
         }
 

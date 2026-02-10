@@ -1,35 +1,72 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using Gruberoo;
 
 namespace PRG_Final_ASG
 {
     internal class Restaurant
     {
+        // =====================
+        // Private fields
+        // =====================
         private string restaurantId;
         private string restaurantName;
         private string restaurantEmail;
 
         private List<Menu> menus;
         private List<SpecialOffer> specialOffers;
-
-        // Add a private field for the order queue
         private List<Order> orderQueue;
 
+        // =====================
+        // Constructor
+        // =====================
         public Restaurant(string id, string name, string email)
         {
             restaurantId = id;
             restaurantName = name;
             restaurantEmail = email;
+
             menus = new List<Menu>();
             specialOffers = new List<SpecialOffer>();
-            orderQueue = new List<Order>(); // Initialize the order queue
+            orderQueue = new List<Order>();
+            FoodItems = new List<FoodItem>(); // Important: initialize
+        }
+
+        // =====================
+        // Properties
+        // =====================
+        public string RestaurantId => restaurantId;
+        public string RestaurantName => restaurantName;
+        public string RestaurantEmail => restaurantEmail;
+
+        // Expose orders safely (read-only)
+        public IEnumerable<Order> OrderQueue => orderQueue;
+
+        // FoodItems list (internal add allowed)
+        public List<FoodItem> FoodItems { get; private set; }
+
+        // Menus and SpecialOffers read-only
+        public IEnumerable<Menu> Menus => menus;
+        public IEnumerable<SpecialOffer> SpecialOffers => specialOffers;
+
+        // =====================
+        // Methods
+        // =====================
+        public void AddFoodItem(FoodItem item)
+        {
+            if (item != null)
+                FoodItems.Add(item);
+        }
+
+        public void AddOrderToQueue(Order order)
+        {
+            if (order != null)
+                orderQueue.Add(order);
         }
 
         public void AddMenu(Menu menu)
         {
-            menus.Add(menu);
+            if (menu != null)
+                menus.Add(menu);
         }
 
         public bool RemoveMenu(Menu menu)
@@ -39,7 +76,13 @@ namespace PRG_Final_ASG
 
         public void DisplayMenu()
         {
-            foreach (Menu menu in menus)
+            if (menus.Count == 0)
+            {
+                Console.WriteLine("No menus available.");
+                return;
+            }
+
+            foreach (var menu in menus)
             {
                 Console.WriteLine(menu);
                 menu.DisplayFoodItems();
@@ -48,41 +91,28 @@ namespace PRG_Final_ASG
 
         public void AddSpecialOffer(SpecialOffer offer)
         {
-            specialOffers.Add(offer);
+            if (offer != null)
+                specialOffers.Add(offer);
         }
 
         public void DisplaySpecialOffers()
         {
-            foreach (SpecialOffer offer in specialOffers)
+            if (specialOffers.Count == 0)
             {
-                Console.WriteLine(offer);
+                Console.WriteLine("No special offers available.");
+                return;
             }
+
+            foreach (var offer in specialOffers)
+                Console.WriteLine(offer);
         }
 
+        // =====================
+        // ToString override
+        // =====================
         public override string ToString()
         {
             return $"{restaurantName} ({restaurantId}) - {restaurantEmail}";
-        }
-
-        public string RestaurantId => restaurantId;
-        public string RestaurantName => restaurantName;
-
-        // Update OrderQueue property to expose the private field
-        public IEnumerable<Order> OrderQueue => orderQueue;
-
-        public IEnumerable<FoodItem> FoodItems { get; internal set; }
-
-        public void AddFoodItem(FoodItem item)
-        {
-            // Assuming FoodItems is a List<FoodItem> internally
-            var foodItemsList = FoodItems as List<FoodItem>;
-            if (foodItemsList != null)
-                foodItemsList.Add(item);
-        }
-
-        public void AddOrderToQueue(Order order)
-        {
-            orderQueue.Add(order);
         }
     }
 }
