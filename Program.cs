@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using PRG_Final_ASG;
 
 namespace Gruberoo
@@ -23,17 +24,18 @@ namespace Gruberoo
 
         static void Main(string[] args)
         {
-            LoadCustomers();
+            Console.WriteLine("Welcome to the Gruberoo Food Delivery System");
+
             LoadRestaurants();
             LoadFoodItems();
+            LoadCustomers();
             LoadOrders();
 
             string choice;
 
             do
             {
-                Console.Clear();
-                Console.WriteLine("===== Gruberoo Food Delivery System =====");
+                Console.WriteLine("\n===== Main Menu =====");
                 Console.WriteLine("1. List all restaurants and menu items");
                 Console.WriteLine("2. List all orders");
                 Console.WriteLine("3. Create a new order");
@@ -54,14 +56,18 @@ namespace Gruberoo
                     case "5": ModifyOrder(); break;
                     case "6": DeleteOrder(); break;
                     case "7": BulkProcessOrders(); break;
-                    case "8": LoadFoodItems(); break;
                 }
 
                 Console.WriteLine("\nPress any key to continue...");
                 Console.ReadKey();
+                Console.Clear(); // clear after the first iteration
 
             } while (choice != "0");
+            { 
+            
+            }
         }
+
 
         // =========================
         // FEATURE 1 & 2 – LOAD FILES
@@ -101,7 +107,7 @@ namespace Gruberoo
                 }
             }
 
-            Console.WriteLine($"Customers loaded: {loaded}");
+            Console.WriteLine($"{loaded} customers loaded!");
         }
 
 
@@ -130,7 +136,7 @@ namespace Gruberoo
                 );
             }
 
-            Console.WriteLine($"Restaurants loaded: {restaurants.Count}");
+            Console.WriteLine($"{restaurants.Count} restaurants loaded!");
         }
 
         static void LoadFoodItems()
@@ -142,7 +148,7 @@ namespace Gruberoo
             }
 
             var lines = File.ReadAllLines("fooditems.csv");
-
+            int loadedCount = 0;
             for (int i = 1; i < lines.Length; i++) // skip header
             {
                 var data = lines[i].Split(',');
@@ -160,7 +166,9 @@ namespace Gruberoo
                 if (r == null) continue;
 
                 r.AddFoodItem(new FoodItem(itemName, description, price));
+                loadedCount++; // increment counter
             }
+            Console.WriteLine($"{loadedCount} food items loaded!");
         }
         static void LoadOrders()
         {
@@ -175,37 +183,24 @@ namespace Gruberoo
             var lines = File.ReadAllLines(filePath);
             int loaded = 0;
 
+            // Regex to split CSV, handles quoted fields
+            Regex csvSplit = new Regex(@",(?=(?:[^""]*""[^""]*"")*[^""]*$)");
+
             for (int i = 1; i < lines.Length; i++) // skip header
             {
                 string line = lines[i].Trim();
                 if (string.IsNullOrEmpty(line)) continue;
 
-                // Custom split to handle quoted fields (especially "Items")
-                List<string> data = new List<string>();
-                bool inQuotes = false;
-                StringBuilder sb = new StringBuilder();
+                // Split line using regex
+                string[] data = csvSplit.Split(line);
 
-                foreach (char c in line)
+                // Remove surrounding quotes if present
+                for (int j = 0; j < data.Length; j++)
                 {
-                    if (c == '"')
-                    {
-                        inQuotes = !inQuotes;
-                        continue;
-                    }
-
-                    if (c == ',' && !inQuotes)
-                    {
-                        data.Add(sb.ToString());
-                        sb.Clear();
-                    }
-                    else
-                    {
-                        sb.Append(c);
-                    }
+                    data[j] = data[j].Trim().Trim('"');
                 }
-                data.Add(sb.ToString()); // last element
 
-                if (data.Count < 10) continue; // skip incomplete lines
+                if (data.Length < 10) continue; // skip incomplete lines
 
                 try
                 {
@@ -225,9 +220,9 @@ namespace Gruberoo
                         System.Globalization.CultureInfo.InvariantCulture
                     );
 
-                    double totalAmount = double.Parse(data[7].Trim());
+
                     string status = data[8].Trim();
-                    string items = data[9].Trim(); // all remaining items combined
+                    string items = data[9].Trim(); // Items field as string
 
                     // Create Order object
                     Order order = new Order
@@ -235,10 +230,46 @@ namespace Gruberoo
                         OrderId = orderId,
                         OrderDateTime = createdDateTime,
                         DeliveryDateTime = deliveryDateTime,
-                        TotalAmount = totalAmount,
                         OrderStatus = status
                     };
 
+                    // Parse Items into OrderedItems list
+                    if (!string.IsNullOrEmpty(items))
+                    {
+                        var itemList = items.Split('|'); // split by pipe
+
+                        foreach (var item in itemList)
+                        {
+                            var parts = item.Split(','); // split name and quantity
+                            if (parts.Length == 2)
+                            {
+                                string itemName = parts[0].Trim();
+                                if (int.TryParse(parts[1].Trim(), out int quantity))
+                                {
+                                    // Find food item price from restaurant menu
+                                    Restaurant rest = restaurants.Find(x => x.RestaurantId == restaurantId);
+                                    FoodItem food = rest?.FoodItems.Find(f => f.ItemName == itemName);
+
+                                    double price = food != null ? food.Price : 0;
+
+                                    OrderedFoodItem orderedItem = new OrderedFoodItem(
+                                        itemName,
+                                        food?.Description ?? "",
+                                        price,
+                                        ""
+                                    )
+                                    {
+                                        QtyOrdered = quantity
+                                    };
+
+                                    order.AddOrderedFoodItem(orderedItem);
+
+                                }
+                            }
+                        }
+                    }
+
+                    order.TotalAmount = order.OrderedItems.Sum(w => w.SubTotal);
                     // Handle Customer
                     Customer c = customers.Find(x => x.Email == customerEmail);
                     if (c == null)
@@ -273,16 +304,10 @@ namespace Gruberoo
                 }
             }
 
-            Console.WriteLine($"Orders loaded: {loaded}");
+            Console.WriteLine($"{loaded} orders loaded!");
         }
 
 
-
-        static int GenerateNewOrderId()
-        {
-            return ++nextOrderId;
-        }
-            
         // =========================
         // FEATURE 3
         // =========================
@@ -318,40 +343,100 @@ namespace Gruberoo
         // FEATURE 4
         // =========================
         static void ListAllOrders()
-{
-    Console.WriteLine("All Orders");
-    Console.WriteLine("==========");
-    Console.WriteLine("{0,-8} {1,-15} {2,-15} {3,-18} {4,-8} {5,-10}",
-        "Order ID", "Customer", "Restaurant", "Delivery Date/Time", "Amount", "Status");
-    Console.WriteLine("{0,-8} {1,-15} {2,-15} {3,-18} {4,-8} {5,-10}",
-        "--------", "---------------", "---------------", "------------------", "------", "---------");
+        {
+            Console.WriteLine("All Orders");
+            Console.WriteLine("==========");
+            Console.WriteLine("{0,-8} {1,-15} {2,-15} {3,-18} {4,-8} {5,-10}",
+                "Order ID", "Customer", "Restaurant", "Delivery Date/Time", "Amount", "Status");
+            Console.WriteLine("{0,-8} {1,-15} {2,-15} {3,-18} {4,-8} {5,-10}",
+                "--------", "---------------", "---------------", "------------------", "------", "---------");
 
-    // Flatten all orders from all customers
-    var allOrders = customers
-        .SelectMany(c => c.OrderList.Select(o => new { Order = o, CustomerName = c.Name }))
-        .OrderBy(x => x.Order.OrderId); // sort globally by OrderId
+            // Flatten all orders from all customers
+            var allOrders = customers
+                .SelectMany(c => c.OrderList.Select(o => new { Order = o, CustomerName = c.Name }))
+                .OrderBy(x => x.Order.OrderId); // sort globally by OrderId
 
-    foreach (var x in allOrders)
-    {
-        string restaurantName = x.Order.Restaurant?.RestaurantName ?? "Unknown";
+            foreach (var x in allOrders)
+            {
+                string restaurantName = x.Order.Restaurant?.RestaurantName ?? "Unknown";
 
-        Console.WriteLine("{0,-8} {1,-15} {2,-15} {3,-18} {4,-8:C} {5,-10}",
-            x.Order.OrderId,
-            x.CustomerName,
-            restaurantName,
-            x.Order.DeliveryDateTime.ToString("dd/MM/yyyy HH:mm"),
-            x.Order.TotalAmount,
-            x.Order.OrderStatus);
-    }
+                Console.WriteLine("{0,-8} {1,-15} {2,-15} {3,-18} {4,-8:C} {5,-10}",
+                    x.Order.OrderId,
+                    x.CustomerName,
+                    restaurantName,
+                    x.Order.DeliveryDateTime.ToString("dd/MM/yyyy HH:mm"),
+                    x.Order.TotalAmount,
+                    x.Order.OrderStatus);
+            }
 
-    Console.WriteLine();
-}
+            Console.WriteLine();
 
+        }
+        static void PrintOrders(IEnumerable<(Order order, string customerName)> orders, string title = "Orders List")
+        {
+            Console.WriteLine(title);
+            Console.WriteLine("==========");
+            Console.WriteLine("{0,-8} {1,-15} {2,-15} {3,-18} {4,-8} {5,-10}",
+                "Order ID", "Customer", "Restaurant", "Delivery Date/Time", "Amount", "Status");
+            Console.WriteLine("{0,-8} {1,-15} {2,-15} {3,-18} {4,-8} {5,-10}",
+                "--------", "---------------", "---------------", "------------------", "------", "---------");
 
+            foreach (var x in orders.OrderBy(x => x.order.OrderId))
+            {
+                string restaurantName = x.order.Restaurant?.RestaurantName ?? "Unknown";
 
+                Console.WriteLine("{0,-8} {1,-15} {2,-15} {3,-18} {4,-8:C} {5,-10}",
+                    x.order.OrderId,
+                    x.customerName,
+                    restaurantName,
+                    x.order.DeliveryDateTime.ToString("dd/MM/yyyy HH:mm"),
+                    x.order.TotalAmount,
+                    x.order.OrderStatus);
+            }
+
+            Console.WriteLine();
+        }
+
+        static void ListOrdersByRestaurant(Restaurant r)
+        {
+            if (r == null)
+            {
+                Console.WriteLine("Restaurant not found!");
+                return;
+            }
+
+            var ordersForRestaurant = customers
+                .SelectMany(c => c.OrderList
+                    .Where(o => o.Restaurant == r)
+                    .Select(o => (order: o, customerName: c.Name)));
+
+            Console.WriteLine($"Orders for {r.RestaurantName}");
+        }
+        static void ListPendingOrders()
+        {
+            var pendingOrders = customers
+                .SelectMany(c => c.OrderList
+                    .Where(o => o.OrderStatus == "Pending")
+                    .Select(o => (order: o, customerName: c.Name)));
+
+            Console.WriteLine("Pending Orders");
+            PrintOrders(pendingOrders); // reuse the same method
+        }
+
+        static void ListAllOrdersInfo()
+        {
+            var allOrders = customers
+                .SelectMany(c => c.OrderList.Select(o => (order: o, customerName: c.Name)));
+
+            PrintOrders(allOrders); // reuse the same method
+        }
         // =========================
         // FEATURE 5
         // =========================
+        static int GenerateNewOrderId()
+        {
+            return ++nextOrderId;
+        }
         static void CreateOrder()
         {
             Console.Write("Customer Email: ");
@@ -387,33 +472,198 @@ namespace Gruberoo
         // =========================
         // FEATURE 6
         // =========================
+        //static void ProcessOrder()
+        //{
+        //    Console.Write("Enter Restaurant ID: ");
+        //    string id = Console.ReadLine();
+
+        //    Restaurant r = restaurants.Find(x => x.RestaurantId == id);
+        //    if (r == null)
+        //    {
+        //        Console.WriteLine("Restaurant not found!");
+        //        return;
+        //    }
+
+        //    foreach (Order o in r.OrderQueue)
+        //    {
+        //        // Show basic order info
+        //        Console.WriteLine($"{o.OrderId} - {o.OrderStatus}");
+        //        Console.WriteLine($"Order {o.OrderId}:");
+        //        Console.WriteLine($"Customer: {o.Restaurant != null ? o.Restaurant.RestaurantName : "Unknown"}");
+        //        // Or if you have a Customer object linked to Order, use o.CustomerName
+
+        //        // Ordered items dynamically
+        //        Console.WriteLine("Ordered Items:");
+        //        if (o.OrderedItems.Count > 0)
+        //        {
+        //            int count = 1;
+        //            foreach (var item in o.OrderedItems)
+        //            {
+        //                Console.WriteLine($"{count}. {item.Name} - {item.Quantity}");
+        //                count++;
+        //            }
+        //        }
+        //        else
+        //        {
+        //            Console.WriteLine("No items found.");
+        //        }
+
+        //        // Delivery time
+        //        Console.WriteLine($"Delivery date/time: {o.DeliveryDateTime:dd/MM/yyyy HH:mm}");
+
+        //        // Total and status
+        //        Console.WriteLine($"Total Amount: ${o.TotalAmount:F2}");
+        //        Console.WriteLine($"Order Status: {o.OrderStatus}");
+
+        //        // Ask for action
+        //        Console.Write("[C]onfirm / [R]eject / [S]kip / [D]eliver: ");
+        //        string choice = Console.ReadLine().ToUpper();
+
+        //        if (choice == "C" && o.OrderStatus == "Pending")
+        //            o.OrderStatus = "Preparing";
+
+        //        else if (choice == "R" && o.OrderStatus == "Pending")
+        //        {
+        //            o.OrderStatus = "Rejected";
+        //            refundStack.Push(o); // assuming you have a stack for refunds
+        //        }
+
+        //        else if (choice == "D" && o.OrderStatus == "Preparing")
+        //            o.OrderStatus = "Delivered";
+
+        //        Console.WriteLine(); // extra line for readability
+        //    }
+        //}
+
         static void ProcessOrder()
         {
-            Console.Write("Restaurant ID: ");
-            string id = Console.ReadLine();
+            Console.Write("Enter Restaurant ID: ");
+            string restaurantId = Console.ReadLine().Trim();
 
-            Restaurant r = restaurants.Find(x => x.RestaurantId == id);
-            if (r == null) return;
-
-            foreach (Order o in r.OrderQueue)
+            // Find restaurant
+            Restaurant r = restaurants.Find(x => x.RestaurantId == restaurantId);
+            if (r == null)
             {
-                Console.WriteLine($"{o.OrderId} - {o.OrderStatus}");
-                Console.Write("[C]onfirm / [R]eject / [D]eliver: ");
-                string choice = Console.ReadLine().ToUpper();
-
-                if (choice == "C" && o.OrderStatus == "Pending")
-                    o.OrderStatus = "Preparing";
-
-                else if (choice == "R" && o.OrderStatus == "Pending")
-                {
-                    o.OrderStatus = "Rejected";
-                    refundStack.Push(o);
-                }
-
-                else if (choice == "D" && o.OrderStatus == "Preparing")
-                    o.OrderStatus = "Delivered";
+                Console.WriteLine("Restaurant not found!");
+                return;
             }
+
+            // Get all orders for this restaurant with customer info, exclude Delivered, sorted by OrderId
+            var ordersToProcess = customers
+                .SelectMany(c => c.OrderList
+                    .Where(o => o.Restaurant == r && o.OrderStatus != "Delivered")
+                    .Select(o => (order: o, customerName: c.Name)))
+                .OrderBy(x => x.order.OrderId)
+                .ToList();
+
+            if (!ordersToProcess.Any())
+            {
+                Console.WriteLine("No pending orders found for this restaurant.");
+                return;
+            }
+
+            Console.WriteLine($"\nOrders for {r.RestaurantName}:");
+            Console.WriteLine("===================================");
+
+            foreach (var x in ordersToProcess)
+            {
+                Order o = x.order;
+
+                while (true) // Keep prompting until a valid action occurs
+                {
+                    Console.WriteLine($"Processing Order {o.OrderId}:");
+                    Console.WriteLine($"Customer: {x.customerName}");
+                    Console.WriteLine("Ordered Items:");
+
+                    if (o.OrderedItems.Count > 0)
+                    {
+                        int count = 1;
+                        foreach (var item in o.OrderedItems)
+                        {
+                            Console.WriteLine($"{count}. {item.ItemName} - {item.QtyOrdered}");
+                            count++;
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("No items found.");
+                    }
+
+                    Console.WriteLine($"Delivery date/time: {o.DeliveryDateTime:dd/MM/yyyy HH:mm}");
+                    Console.WriteLine($"Total Amount: ${o.TotalAmount:F2}");
+                    Console.WriteLine($"Order Status: {o.OrderStatus}");
+
+                    // Show only valid actions
+                    List<string> options = new List<string>();
+                    if (o.OrderStatus == "Pending") options.Add("[C]onfirm");
+                    if (o.OrderStatus == "Pending") options.Add("[R]eject");
+                    if (o.OrderStatus == "Cancelled") options.Add("[S]kip");
+                    if (o.OrderStatus == "Preparing") options.Add("[D]eliver");
+
+                    Console.Write($"{string.Join("/", options)}: ");
+                    string choice = Console.ReadLine().ToUpper();
+
+                    bool validAction = false;
+
+                    switch (choice)
+                    {
+                        case "C":
+                            if (o.OrderStatus == "Pending")
+                            {
+                                o.OrderStatus = "Preparing";
+                                Console.WriteLine($"Order {o.OrderId} confirmed. Status: {o.OrderStatus}");
+                                validAction = true;
+                            }
+                            else Console.WriteLine("Cannot confirm: Order is not Pending.");
+                            break;
+
+                        case "R":
+                            if (o.OrderStatus == "Pending")
+                            {
+                                o.OrderStatus = "Rejected";
+                                refundStack.Push(o);
+                                Console.WriteLine($"Order {o.OrderId} rejected. Status: {o.OrderStatus}");
+                                validAction = true;
+                            }
+                            else Console.WriteLine("Cannot reject: Order is not Pending.");
+                            break;
+
+                        case "S":
+                            if (o.OrderStatus == "Cancelled")
+                            {
+                                Console.WriteLine($"Order {o.OrderId} skipped. Status: {o.OrderStatus}");
+                                validAction = true;
+                            }
+                            else Console.WriteLine("Cannot skip: Order is not Cancelled.");
+                            break;
+
+                        case "D":
+                            if (o.OrderStatus == "Preparing")
+                            {
+                                o.OrderStatus = "Delivered";
+                                Console.WriteLine($"Order {o.OrderId} delivered. Status: {o.OrderStatus}");
+                                validAction = true;
+                            }
+                            else Console.WriteLine("Cannot deliver: Order is not Preparing.");
+                            break;
+
+                        default:
+                            Console.WriteLine("Invalid choice.");
+                            break;
+                    }
+
+                    Console.WriteLine(); // spacing
+
+                    if (validAction) break; // exit the prompt loop for this order
+                }
+            }
+
+            Console.WriteLine("\nAll orders processed for this restaurant.\n");
         }
+
+
+
+
 
         // =========================
         // FEATURE 7
