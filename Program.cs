@@ -1,8 +1,7 @@
 ﻿//==========================================================
-// Student Number : S10271327
-// Student Name : Xie Liangchen
 // Student Number : S10273654
 // Student Name : Chiam Sheng Le
+// Partner Name : Xie Liangchen
 //==========================================================
 
 using System;
@@ -73,7 +72,7 @@ namespace Gruberoo
 
 
         // =========================
-        // FEATURE 1 & 2 – LOAD FILES
+        // FEATURE 1 & 2 – LOAD FILES (1 BY: Chiam Sheng Le)
         // =========================
         static void LoadCustomers()
         {
@@ -343,7 +342,7 @@ namespace Gruberoo
 
 
         // =========================
-        // FEATURE 4
+        // FEATURE 4 (BY: Chiam Sheng Le)
         // =========================
         static void ListAllOrders()
         {
@@ -473,71 +472,8 @@ namespace Gruberoo
         }
 
         // =========================
-        // FEATURE 6
+        // FEATURE 6 (BY: Chiam Sheng Le)
         // =========================
-        //static void ProcessOrder()
-        //{
-        //    Console.Write("Enter Restaurant ID: ");
-        //    string id = Console.ReadLine();
-
-        //    Restaurant r = restaurants.Find(x => x.RestaurantId == id);
-        //    if (r == null)
-        //    {
-        //        Console.WriteLine("Restaurant not found!");
-        //        return;
-        //    }
-
-        //    foreach (Order o in r.OrderQueue)
-        //    {
-        //        // Show basic order info
-        //        Console.WriteLine($"{o.OrderId} - {o.OrderStatus}");
-        //        Console.WriteLine($"Order {o.OrderId}:");
-        //        Console.WriteLine($"Customer: {o.Restaurant != null ? o.Restaurant.RestaurantName : "Unknown"}");
-        //        // Or if you have a Customer object linked to Order, use o.CustomerName
-
-        //        // Ordered items dynamically
-        //        Console.WriteLine("Ordered Items:");
-        //        if (o.OrderedItems.Count > 0)
-        //        {
-        //            int count = 1;
-        //            foreach (var item in o.OrderedItems)
-        //            {
-        //                Console.WriteLine($"{count}. {item.Name} - {item.Quantity}");
-        //                count++;
-        //            }
-        //        }
-        //        else
-        //        {
-        //            Console.WriteLine("No items found.");
-        //        }
-
-        //        // Delivery time
-        //        Console.WriteLine($"Delivery date/time: {o.DeliveryDateTime:dd/MM/yyyy HH:mm}");
-
-        //        // Total and status
-        //        Console.WriteLine($"Total Amount: ${o.TotalAmount:F2}");
-        //        Console.WriteLine($"Order Status: {o.OrderStatus}");
-
-        //        // Ask for action
-        //        Console.Write("[C]onfirm / [R]eject / [S]kip / [D]eliver: ");
-        //        string choice = Console.ReadLine().ToUpper();
-
-        //        if (choice == "C" && o.OrderStatus == "Pending")
-        //            o.OrderStatus = "Preparing";
-
-        //        else if (choice == "R" && o.OrderStatus == "Pending")
-        //        {
-        //            o.OrderStatus = "Rejected";
-        //            refundStack.Push(o); // assuming you have a stack for refunds
-        //        }
-
-        //        else if (choice == "D" && o.OrderStatus == "Preparing")
-        //            o.OrderStatus = "Delivered";
-
-        //        Console.WriteLine(); // extra line for readability
-        //    }
-        //}
-
         static void ProcessOrder()
         {
             Console.Write("Enter Restaurant ID: ");
@@ -669,7 +605,7 @@ namespace Gruberoo
 
 
         // =========================
-        // FEATURE 7
+        // FEATURE 7 
         // =========================
         static void ModifyOrder()
         {
@@ -696,7 +632,7 @@ namespace Gruberoo
         }
 
         // =========================
-        // FEATURE 8
+        // FEATURE 8 (BY: Chiam Sheng Le)
         // =========================
         static void DeleteOrder()
         {
@@ -808,7 +744,7 @@ namespace Gruberoo
         }
 
         // =========================
-        // ADVANCED FEATURE B
+        // ADVANCED FEATURE B (BY: Chiam Sheng Le)
         // =========================
         static void DisplayTotalOrderAmount()
         {
