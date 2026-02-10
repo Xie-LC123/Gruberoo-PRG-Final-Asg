@@ -455,34 +455,103 @@ namespace Gruberoo
         }
         static void CreateOrder()
         {
-            Console.Write("Customer Email: ");
+            Console.WriteLine("Create New Order");
+            Console.WriteLine("================");
+
+            Console.Write("Enter Customer Email: ");
             string email = Console.ReadLine();
 
             Customer cust = customers.Find(x => x.Email == email);
-            if (cust == null) return;
+            if (cust == null)
+            {
+                Console.WriteLine("Customer not found.");
+                return;
+            }
 
-            Console.Write("Restaurant ID: ");
+            Console.Write("Enter Restaurant ID: ");
             string restId = Console.ReadLine();
 
             Restaurant rest = restaurants.Find(x => x.RestaurantId == restId);
-            if (rest == null) return;
+            if (rest == null)
+            {
+                Console.WriteLine("Restaurant not found.");
+                return;
+            }
 
-            Order order = new Order();
-            order.OrderId = GenerateNewOrderId();
-            order.OrderStatus = "Pending";
-            order.OrderDateTime = DateTime.Now;
+            Console.Write("Enter Delivery Date (dd/MM/yyyy): ");
+            string date = Console.ReadLine();
+
+            Console.Write("Enter Delivery Time (hh:mm): ");
+            string time = Console.ReadLine();
+
+            Console.Write("Enter Delivery Address: ");
+            string address = Console.ReadLine();
 
             double total = 0;
 
-            foreach (FoodItem f in rest.FoodItems)
+            Console.WriteLine("\nAvailable Food Items:");
+
+            for (int i = 0; i < rest.FoodItems.Count; i++)
             {
-                Console.WriteLine($"{f.ItemName} - ${f.Price}");
-                total += f.Price; // simple version
+                Console.WriteLine($"{i + 1}. {rest.FoodItems[i].ItemName} - ${rest.FoodItems[i].Price:F2}");
             }
-            order.TotalAmount = total + 5;
+
+            while (true)
+            {
+                Console.Write("Enter item number (0 to finish): ");
+                int choice = int.Parse(Console.ReadLine());
+
+                if (choice == 0)
+                    break;
+
+                if (choice < 1 || choice > rest.FoodItems.Count)
+                {
+                    Console.WriteLine("Invalid item number.");
+                    continue;
+                }
+
+                FoodItem selected = rest.FoodItems[choice - 1];
+
+                Console.Write("Enter quantity: ");
+                int qty = int.Parse(Console.ReadLine());
+
+                total += selected.Price * qty;
+            }
+
+            Console.Write("Add special request? [Y/N]: ");
+            if (Console.ReadLine().ToUpper() == "Y")
+            {
+                Console.Write("Enter special request: ");
+                Console.ReadLine(); // we just read it but do nothing (since class doesn't support it)
+            }
+
+            double deliveryFee = 5.00;
+            double finalTotal = total + deliveryFee;
+
+            Console.WriteLine($"\nOrder Total: ${total:F2} + ${deliveryFee:F2} (delivery) = ${finalTotal:F2}");
+
+            Console.Write("Proceed to payment? [Y/N]: ");
+            if (Console.ReadLine().ToUpper() != "Y")
+            {
+                Console.WriteLine("Order cancelled.");
+                return;
+            }
+
+            Console.WriteLine("\nPayment method:");
+            Console.Write("[CC] Credit Card / [PP] PayPal / [CD] Cash on Delivery: ");
+            Console.ReadLine(); // read but not stored
+
+            // Now create order using ONLY what your class supports
+            Order order = new Order();
+
+            order.OrderId = GenerateNewOrderId();
+            order.TotalAmount = finalTotal;
+            order.OrderStatus = "Pending";
+
             cust.AddOrder(order);
             rest.AddOrderToQueue(order);
-            Console.WriteLine($"Order {order.OrderId} created!");
+
+            Console.WriteLine($"\nOrder {order.OrderId} created successfully! Status: Pending");
         }
 
         // =========================
@@ -686,26 +755,85 @@ namespace Gruberoo
         // =========================
         static void ModifyOrder()
         {
-            Console.Write("Customer Email: ");
+            Console.WriteLine("Modify Order");
+            Console.WriteLine("============");
+
+            Console.Write("Enter Customer Email: ");
             string email = Console.ReadLine();
 
             Customer cust = customers.Find(x => x.Email == email);
-            if (cust == null) return;
+            if (cust == null)
+            {
+                Console.WriteLine("Customer not found.");
+                return;
+            }
 
-            var pending = cust.OrderList.Where(o => o.OrderStatus == "Pending").ToList();
+            var pending = cust.OrderList
+                              .Where(o => o.OrderStatus == "Pending")
+                              .ToList();
+
+            if (pending.Count == 0)
+            {
+                Console.WriteLine("No pending orders.");
+                return;
+            }
+
+            Console.WriteLine("Pending Orders:");
             foreach (var o in pending)
+            {
                 Console.WriteLine(o.OrderId);
+            }
 
-            Console.Write("Order ID: ");
+            Console.Write("Enter Order ID: ");
             int id = int.Parse(Console.ReadLine());
 
             Order order = pending.Find(o => o.OrderId == id);
-            if (order == null) return;
+            if (order == null)
+            {
+                Console.WriteLine("Invalid Order ID.");
+                return;
+            }
 
-            Console.Write("New Total Amount: ");
-            order.TotalAmount = double.Parse(Console.ReadLine());
+            Console.WriteLine($"\nCurrent Total: ${order.TotalAmount:F2}");
 
-            Console.WriteLine("Order updated.");
+            Console.WriteLine("\nModify:");
+            Console.WriteLine("[1] Items");
+            Console.WriteLine("[2] Address");
+            Console.WriteLine("[3] Delivery Time");
+            Console.Write("Enter choice: ");
+
+            string choice = Console.ReadLine();
+
+            if (choice == "1")
+            {
+                Console.Write("Enter new total amount: ");
+                double newTotal = double.Parse(Console.ReadLine());
+
+                if (newTotal > order.TotalAmount)
+                {
+                    Console.Write("Total increased. Proceed to payment? [Y/N]: ");
+                    if (Console.ReadLine().ToUpper() != "Y")
+                    {
+                        Console.WriteLine("Modification cancelled.");
+                        return;
+                    }
+                }
+
+                order.TotalAmount = newTotal;
+                Console.WriteLine($"Order {order.OrderId} updated. New Total: ${order.TotalAmount:F2}");
+            }
+            else if (choice == "2")
+            {
+                Console.WriteLine("Address updated (simulation only).");
+            }
+            else if (choice == "3")
+            {
+                Console.WriteLine("Delivery time updated (simulation only).");
+            }
+            else
+            {
+                Console.WriteLine("Invalid choice.");
+            }
         }
 
         // =========================
