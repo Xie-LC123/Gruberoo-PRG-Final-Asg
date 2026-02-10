@@ -17,11 +17,16 @@ namespace PRG_Final_ASG
         }
 
         // Convenience ctor so Program (or other code) can create from a FoodItem + qty
-        public OrderedFoodItem(FoodItem item, int qty) : base(item.ItemName, item.Description ?? "", item.Price, string.Empty)
+        public OrderedFoodItem(string itemName, int qty) : base(itemName, "", 0, "")
         {
             QtyOrdered = qty;
             SubTotal = CalculateSubtotal();
         }
+        public void UpdateSubTotal()
+        {
+            SubTotal = QtyOrdered * Price;
+        }
+
 
         public double CalculateSubtotal()
         {
